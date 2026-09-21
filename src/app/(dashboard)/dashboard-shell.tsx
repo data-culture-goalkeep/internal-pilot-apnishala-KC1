@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -24,9 +25,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <header className="border-b border-border bg-card">
         <div className="flex items-center justify-between gap-4 px-6 py-3">
           <div className="flex items-center gap-3">
-            <span className="flex size-8 items-center justify-center rounded-lg bg-gk-yellow text-base">
-              🪁
-            </span>
+            <Image
+              src="/apnishala-logo.png"
+              alt="Apnishala"
+              width={36}
+              height={34}
+              className="rounded-md object-cover"
+            />
             <Link href="/overview" className="font-heading text-lg font-semibold">
               Khoj Dashboard
             </Link>
