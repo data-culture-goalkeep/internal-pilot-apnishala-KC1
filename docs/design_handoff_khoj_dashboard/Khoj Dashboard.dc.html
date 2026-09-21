@@ -1,0 +1,1971 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./image-slot.js"></script>
+<style>
+  body{margin:0;background:oklch(97.5% 0.004 250);font-family:Inter,system-ui,sans-serif;color:oklch(20% 0.012 250)}
+  * { box-sizing:border-box; }
+  a { color:oklch(45% 0.1 235); }
+  a:hover { color:oklch(35% 0.1 235); }
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:oklch(85% 0.006 250);border-radius:4px}
+  @keyframes livepulse{0%,100%{opacity:1}50%{opacity:.35}}
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:oklch(97.5% 0.004 250)">
+
+  <!-- TOP BAR -->
+  <div style="display:flex;align-items:center;gap:20px;padding:14px 24px;background:#fff;border-bottom:1px solid oklch(90% 0.006 250);flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px;font-family:Manrope,sans-serif;font-weight:800;font-size:18px;letter-spacing:-.01em;cursor:pointer" onclick="{{ goToOverview }}">
+      <img src="uploads/apni-shala-logo-cc-01.png" alt="Apnishala logo" style="width:38px;height:32px;border-radius:6px;object-fit:cover;flex:none">
+      Khoj Dashboard
+    </div>
+
+    <div style="display:flex;background:oklch(94% 0.006 250);border-radius:10px;padding:3px;gap:2px">
+      <button style="{{ roleTeacherBtnStyle }}" onclick="{{ setRoleTeacher }}">Teacher</button>
+      <button style="{{ roleLeadBtnStyle }}" onclick="{{ setRoleLead }}">Leadership</button>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250)">Select grade</span>
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <sc-for list="{{ gradesVM }}" as="g" hint-placeholder-count="12">
+          <button style="{{ g.style }}" onclick="{{ g.onClick }}">{{ g.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px;color:oklch(52% 0.02 250)">
+      <span style="width:7px;height:7px;border-radius:50%;background:oklch(60% 0.12 155);display:inline-block;animation:livepulse 1.6s infinite"></span>
+      {{ liveLabel }}
+      <button style="border:1px solid oklch(88% 0.006 250);background:#fff;border-radius:7px;padding:5px 10px;font-size:11.5px;font-weight:700;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ refreshData }}">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div style="display:flex;flex:1;min-height:0">
+
+    <!-- LEFT NAV -->
+    <div style="width:200px;flex:none;background:#fff;border-right:1px solid oklch(90% 0.006 250);padding:16px 10px;display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{ navItemsVM }}" as="n" hint-placeholder-count="6">
+        <button style="{{ n.style }}" onclick="{{ n.onClick }}">
+          <span style="{{ n.dotStyle }}"></span>{{ n.label }}
+        </button>
+      </sc-for>
+    </div>
+
+    <!-- MAIN -->
+    <div style="flex:1;min-width:0;overflow-y:auto;padding:24px 28px 60px;position:relative">
+
+      <sc-if value="{{ toast }}" hint-placeholder-val="{{ null }}">
+        <div style="position:fixed;bottom:24px;right:28px;background:oklch(22% 0.01 250);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:50">{{ toast }}</div>
+      </sc-if>
+
+      <!-- OVERVIEW -->
+      <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+        <sc-if value="{{ isTeacherRole }}" hint-placeholder-val="{{ true }}">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0 0 4px">Overview — Grade {{ gradeDisplay }}</h1>
+          <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">What needs attention today, and where the numbers stand.</p>
+
+          <sc-if value="{{ thresholdAlert }}" hint-placeholder-val="{{ null }}">
+            <div style="display:flex;gap:10px;align-items:center;background:oklch(95% 0.045 55);border:1px solid oklch(80% 0.09 55);color:oklch(38% 0.08 55);padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:13.5px">
+              <span style="font-weight:700">Threshold alert —</span>{{ thresholdAlert }}
+            </div>
+          </sc-if>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:24px">
+            <sc-for list="{{ statCards }}" as="c" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+                  <div style="{{ c.iconStyle }}"></div>
+                  <span style="font-size:12px;color:oklch(52% 0.02 250);font-weight:600">{{ c.label }}</span>
+                </div>
+                <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ c.value }}</div>
+                <div style="font-size:12px;color:{{ c.subColor }};margin-top:4px">{{ c.sub }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+              <h2 style="font-family:Manrope,sans-serif;font-size:15px;margin:0">Action queue</h2>
+              <span style="font-size:12px;color:oklch(52% 0.02 250)">{{ openActionCount }} open</span>
+            </div>
+            <sc-for list="{{ actionQueueVM }}" as="a" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid oklch(93% 0.006 250)">
+                <span style="{{ a.dotStyle }}"></span>
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:600">{{ a.title }}</div>
+                  <div style="font-size:12px;color:oklch(52% 0.02 250);margin-top:2px">Grade {{ a.grade }} · {{ a.typeLabel }} · {{ a.statusLabel }}</div>
+                </div>
+                <sc-if value="{{ a.showButton }}" hint-placeholder-val="{{ true }}">
+                  <button style="flex:none;font-size:12px;font-weight:600;padding:7px 12px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ a.onAction }}">Mark actioned</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ isLeadRole }}" hint-placeholder-val="{{ false }}">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0 0 4px">Org roll-up</h1>
+          <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">School-wide outcomes across all grades.</p>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px">
+            <sc-for list="{{ orgKpiCards }}" as="k" hint-placeholder-count="3">
+              <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px">
+                <div style="font-size:12px;font-weight:600;color:oklch(52% 0.02 250);margin-bottom:8px">{{ k.label }}</div>
+                <div style="font-family:Manrope,sans-serif;font-size:24px;font-weight:800;margin-bottom:8px">{{ k.value }}</div>
+                <div style="height:6px;background:oklch(93% 0.006 250);border-radius:4px;overflow:hidden">
+                  <div style="{{ k.barStyle }}"></div>
+                </div>
+                <div style="font-size:11.5px;color:oklch(55% 0.02 250);margin-top:6px">{{ k.note }}</div>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1.3fr 1fr;gap:16px;margin-bottom:18px">
+            <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+              <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Summative bracket movement — pre → post (Q11)</h2>
+              <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">Bracket-level movement, not raw score change.</p>
+              <div style="display:flex;gap:8px">
+                <div style="display:flex;flex-direction:column;justify-content:space-between;height:110px">
+                  <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                    <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                  </sc-for>
+                </div>
+                <div style="flex:1">
+                  <div style="{{ bracketMovementRowStyle }}">
+                    <sc-for list="{{ bracketMovementVM }}" as="b" hint-placeholder-count="6">
+                      <span style="flex:1;text-align:center;font-size:9.5px;font-weight:700;color:oklch(58% 0.12 155)">{{ b.upLabel }}</span>
+                    </sc-for>
+                  </div>
+                  <div style="position:relative">
+                    <div style="position:absolute;left:0;right:0;top:0;height:110px">
+                      <sc-for list="{{ pctAxisLinesVM }}" as="l" hint-placeholder-count="5">
+                        <div style="{{ l.style }}"></div>
+                      </sc-for>
+                    </div>
+                    <div style="{{ bracketMovementRowStyle }} align-items:flex-end;height:110px">
+                      <sc-for list="{{ bracketMovementVM }}" as="b" hint-placeholder-count="6">
+                        <div style="width:100%;max-width:30px;height:110px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column-reverse;margin:0 auto">
+                          <div style="{{ b.downStyle }}"></div>
+                          <div style="{{ b.stayStyle }}"></div>
+                          <div style="{{ b.upStyle }}"></div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div style="{{ bracketMovementRowStyle }} margin-top:6px">
+                    <sc-for list="{{ bracketMovementVM }}" as="b" hint-placeholder-count="6">
+                      <span style="flex:1;text-align:center;font-size:10.5px;color:oklch(52% 0.02 250);font-weight:600">{{ b.grade }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+              <div style="display:flex;gap:14px;margin-top:12px;font-size:11.5px;color:oklch(52% 0.02 250)">
+                <span><span style="display:inline-block;width:8px;height:8px;background:oklch(60% 0.12 155);border-radius:2px;margin-right:5px"></span>Up</span>
+                <span><span style="display:inline-block;width:8px;height:8px;background:oklch(80% 0.01 250);border-radius:2px;margin-right:5px"></span>Stay</span>
+                <span><span style="display:inline-block;width:8px;height:8px;background:oklch(56% 0.17 20);border-radius:2px;margin-right:5px"></span>Down</span>
+              </div>
+            </div>
+
+            <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+              <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 12px">Top movers this cycle (Q13)</h2>
+              <sc-for list="{{ topMoversVM }}" as="m" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250)">
+                  <div style="width:26px;height:26px;border-radius:50%;background:oklch(94% 0.006 250);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:oklch(45% 0.02 250)">{{ m.initials }}</div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-size:13px;font-weight:600">{{ m.name }}</div>
+                    <div style="font-size:11.5px;color:oklch(52% 0.02 250)">Grade {{ m.grade }}</div>
+                  </div>
+                  <div style="font-size:13px;font-weight:700;color:{{ m.deltaColor }}">{{ m.deltaLabel }}</div>
+                </div>
+              </sc-for>
+              <a href="#" onclick="{{ goGrowth }}" style="display:inline-block;margin-top:12px;font-size:12.5px;font-weight:600">See full ranking →</a>
+            </div>
+          </div>
+        </sc-if>
+      </sc-if>
+
+      <!-- FORMATIVE ASSESSMENTS -->
+      <sc-if value="{{ isFormative }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0">Formative Assessments — Grade {{ gradeDisplay }}</h1>
+          <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12.5px;color:oklch(55% 0.02 250)">Select a specific grade to add an assessment.</span>
+          </sc-if>
+          <sc-if value="{{ notAllGrade }}" hint-placeholder-val="{{ true }}">
+            <button style="{{ primaryBtnStyle }}" onclick="{{ openConfigureFormative }}">+ New assessment</button>
+          </sc-if>
+        </div>
+        <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">Coverage, latest scores, and month-over-month competency trend.</p>
+
+        <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Average score by grade</h2>
+            <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">Average % score across all formative assessments, by grade.</p>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:120px">
+                <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:1">
+                <div style="display:flex;gap:16px">
+                  <sc-for list="{{ formativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                    <span style="flex:1;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ m.pctLabel }}</span>
+                  </sc-for>
+                </div>
+                <div style="position:relative">
+                  <div style="position:absolute;left:0;right:0;top:0;height:120px">
+                    <sc-for list="{{ pctAxisLinesVM }}" as="l" hint-placeholder-count="5">
+                      <div style="{{ l.style }}"></div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:16px;align-items:flex-end;height:120px;position:relative">
+                    <sc-for list="{{ formativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                      <div style="width:100%;max-width:44px;border-radius:5px 5px 2px 2px;margin:0 auto;{{ m.barStyle }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:6px">
+                  <sc-for list="{{ formativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                    <span style="flex:1;text-align:center;font-size:11px;color:oklch(52% 0.02 250)">Grade {{ m.grade }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0 0 4px">Coverage by month (Q3)</h2>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:120px">
+                <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:1">
+                <div style="display:flex;gap:10px">
+                  <sc-for list="{{ formativeCoverageVM }}" as="m" hint-placeholder-count="6">
+                    <span style="flex:1;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ m.pctLabel }}</span>
+                  </sc-for>
+                </div>
+                <div style="position:relative">
+                  <div style="position:absolute;left:0;right:0;top:0;height:120px">
+                    <sc-for list="{{ pctAxisLinesVM }}" as="l" hint-placeholder-count="5">
+                      <div style="{{ l.style }}"></div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:10px;align-items:flex-end;height:120px;position:relative">
+                    <sc-for list="{{ formativeCoverageVM }}" as="m" hint-placeholder-count="6">
+                      <div style="width:100%;max-width:26px;border-radius:5px 5px 2px 2px;margin:0 auto;{{ m.barStyle }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:6px">
+                  <sc-for list="{{ formativeCoverageVM }}" as="m" hint-placeholder-count="6">
+                    <span style="flex:1;text-align:center;font-size:10.5px;color:oklch(52% 0.02 250)">{{ m.month }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:10px">
+              <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0">Latest assessment</h2>
+              <sc-if value="{{ hasFormativeHistory }}" hint-placeholder-val="{{ false }}">
+                <select style="{{ selPeriodSelectStyle }}" onchange="{{ onFormativeFilterChange }}">
+                  <sc-for list="{{ formativeFilterOptionsVM }}" as="opt" hint-placeholder-count="2">
+                    <option value="{{ opt.value }}" selected="{{ opt.selected }}">{{ opt.label }}</option>
+                  </sc-for>
+                </select>
+              </sc-if>
+            </div>
+            <sc-if value="{{ latestFormative }}" hint-placeholder-val="{{ null }}">
+              <div style="font-size:12.5px;color:oklch(52% 0.02 250);margin-bottom:4px">{{ latestFormative.subject }} · {{ latestFormative.date }} · {{ latestFormative.roundLabel }}</div>
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ latestFormative.avgLabel }}</div>
+                <div style="font-size:13px;font-weight:700;color:{{ latestFormative.deltaColor }}">{{ latestFormative.deltaLabel }}</div>
+              </div>
+              <button style="{{ secondaryBtnStyle }}" onclick="{{ latestFormative.onEnter }}">Enter/edit scores</button>
+            </sc-if>
+            <sc-if value="{{ noFormative }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No assessments configured yet for this grade.</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 14px">Bracket distribution by subject — Formative</h2>
+          <div style="display:flex;gap:10px">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;height:130px;padding-bottom:22px">
+              <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+              </sc-for>
+            </div>
+            <div style="flex:1;position:relative">
+              <div style="position:absolute;left:0;right:0;top:0;height:130px">
+                <sc-for list="{{ pctAxisLines130VM }}" as="l" hint-placeholder-count="5">
+                  <div style="{{ l.style }}"></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:28px;align-items:flex-end;height:130px;position:relative;padding-bottom:22px;flex-wrap:wrap">
+                <sc-for list="{{ formativeBracketBySubjectVM }}" as="s" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <div style="width:52px;height:100px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column-reverse">
+                      <sc-for list="{{ s.segments }}" as="seg" hint-placeholder-count="4">
+                        <div style="{{ seg.style }}">
+                          <sc-if value="{{ seg.showLabel }}" hint-placeholder-val="{{ true }}">{{ seg.label }}</sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <span style="font-size:11.5px;font-weight:600;color:oklch(50% 0.02 250)">{{ s.subject }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;flex-direction:column;gap:5px;margin-left:8px;justify-content:center">
+                  <sc-for list="{{ bracketLegend }}" as="l" hint-placeholder-count="4">
+                    <span style="font-size:11px;color:oklch(52% 0.02 250)"><span style="{{ l.swatch }}"></span>{{ l.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Objectives assessed — latest formative (Q8)</h2>
+          <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">Teacher-entered objectives for {{ latestFormativeObjectivesLabel }}. No standard competency scale — objectives vary by assessment.</p>
+          <sc-if value="{{ hasLatestFormativeObjectives }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:1fr 90px 110px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+              <span>Objective</span><span>Max marks</span><span>Class average</span>
+            </div>
+            <sc-for list="{{ latestFormativeObjectivesVM }}" as="o" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:1fr 90px 110px;padding:9px 0;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span>{{ o.text }}</span>
+                <span style="color:oklch(52% 0.02 250)">{{ o.maxMarks }}</span>
+                <span style="font-weight:600">{{ o.avgLabel }}</span>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ noLatestFormativeObjectives }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No formative assessment configured yet for this grade.</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-top:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 12px">Recently added</h2>
+          <sc-if value="{{ hasRecentFormative }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:100px 1fr 80px 90px 90px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+              <span>Date</span><span>Subject</span><span>Avg</span><span></span><span></span>
+            </div>
+            <sc-for list="{{ recentFormativeVM }}" as="r" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:100px 1fr 80px 90px 90px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span style="color:oklch(52% 0.02 250)">{{ r.date }}</span>
+                <span style="font-weight:600">{{ r.subject }}</span>
+                <span>{{ r.avgLabel }}</span>
+                <button style="{{ tableActionBtnStyle }}" onclick="{{ r.onEdit }}">Edit</button>
+                <button style="{{ tableDeleteBtnStyle }}" onclick="{{ r.onDelete }}">Delete</button>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ noRecentFormative }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No records added yet.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- SUMMATIVE ASSESSMENTS -->
+      <sc-if value="{{ isSummative }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0">Summative Assessments — Grade {{ gradeDisplay }}</h1>
+          <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12.5px;color:oklch(55% 0.02 250)">Select a specific grade to add an assessment.</span>
+          </sc-if>
+          <sc-if value="{{ notAllGrade }}" hint-placeholder-val="{{ true }}">
+            <button style="{{ primaryBtnStyle }}" onclick="{{ openConfigureSummative }}">+ New assessment</button>
+          </sc-if>
+        </div>
+        <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">Coverage, bracket distribution, and scores by subject.</p>
+
+        <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Average score by grade</h2>
+            <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">Average % score across all summative assessments, by grade.</p>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:120px">
+                <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:1">
+                <div style="display:flex;gap:16px">
+                  <sc-for list="{{ summativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                    <span style="flex:1;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ m.pctLabel }}</span>
+                  </sc-for>
+                </div>
+                <div style="position:relative">
+                  <div style="position:absolute;left:0;right:0;top:0;height:120px">
+                    <sc-for list="{{ pctAxisLinesVM }}" as="l" hint-placeholder-count="5">
+                      <div style="{{ l.style }}"></div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:16px;align-items:flex-end;height:120px;position:relative">
+                    <sc-for list="{{ summativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                      <div style="width:100%;max-width:44px;border-radius:5px 5px 2px 2px;margin:0 auto;{{ m.barStyle }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="display:flex;gap:16px;margin-top:6px">
+                  <sc-for list="{{ summativeGradeCompareVM }}" as="m" hint-placeholder-count="3">
+                    <span style="flex:1;text-align:center;font-size:11px;color:oklch(52% 0.02 250)">Grade {{ m.grade }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0 0 4px">Coverage, pre vs. post (Q4)</h2>
+            <p style="margin:0 0 10px;font-size:11.5px;color:oklch(52% 0.02 250)">Grade 6+ observation methodology differs — flagged by Rohit.</p>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:100px">
+                <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:1;padding-left:8px">
+                <div style="display:flex;gap:24px">
+                  <span style="width:34px;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ summativePreLabel }}</span>
+                  <span style="width:34px;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ summativePostLabel }}</span>
+                </div>
+                <div style="position:relative">
+                  <div style="position:absolute;left:0;right:0;top:0;height:100px">
+                    <sc-for list="{{ pctAxisLines100VM }}" as="l" hint-placeholder-count="5">
+                      <div style="{{ l.style }}"></div>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex;gap:24px;align-items:flex-end;height:100px;position:relative">
+                    <div style="width:34px;border-radius:5px 5px 2px 2px;{{ preCoverageStyle }}"></div>
+                    <div style="width:34px;border-radius:5px 5px 2px 2px;{{ postCoverageStyle }}"></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:24px;margin-top:6px">
+                  <span style="width:34px;text-align:center;font-size:11px;color:oklch(52% 0.02 250)">Pre</span>
+                  <span style="width:34px;text-align:center;font-size:11px;color:oklch(52% 0.02 250)">Post</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0 0 10px">Latest assessment</h2>
+            <sc-if value="{{ latestSummative }}" hint-placeholder-val="{{ null }}">
+              <div style="font-size:12.5px;color:oklch(52% 0.02 250);margin-bottom:4px">{{ latestSummative.subject }} · {{ latestSummative.date }}</div>
+              <div style="display:flex;align-items:baseline;gap:10px">
+                <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ latestSummative.avgLabel }}</div>
+                <div style="font-size:13px;font-weight:700;color:{{ latestSummative.deltaColor }}">{{ latestSummative.deltaLabel }}</div>
+              </div>
+              <button style="{{ secondaryBtnStyle }}" onclick="{{ latestSummative.onEnter }}">Enter/edit scores</button>
+            </sc-if>
+            <sc-if value="{{ noSummative }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No assessments configured yet for this grade.</div>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 14px">Bracket distribution by subject (Q10)</h2>
+          <div style="display:flex;gap:10px">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;height:130px;padding-bottom:22px">
+              <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+              </sc-for>
+            </div>
+            <div style="flex:1;position:relative">
+              <div style="position:absolute;left:0;right:0;top:0;height:130px">
+                <sc-for list="{{ pctAxisLines130VM }}" as="l" hint-placeholder-count="5">
+                  <div style="{{ l.style }}"></div>
+                </sc-for>
+              </div>
+              <div style="display:flex;gap:28px;align-items:flex-end;height:130px;position:relative;padding-bottom:22px;flex-wrap:wrap">
+                <sc-for list="{{ bracketBySubjectVM }}" as="s" hint-placeholder-count="3">
+                  <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
+                    <div style="width:52px;height:100px;border-radius:6px;overflow:hidden;display:flex;flex-direction:column-reverse">
+                      <sc-for list="{{ s.segments }}" as="seg" hint-placeholder-count="4">
+                        <div style="{{ seg.style }}">
+                          <sc-if value="{{ seg.showLabel }}" hint-placeholder-val="{{ true }}">{{ seg.label }}</sc-if>
+                        </div>
+                      </sc-for>
+                    </div>
+                    <span style="font-size:11.5px;font-weight:600;color:oklch(50% 0.02 250)">{{ s.subject }}</span>
+                  </div>
+                </sc-for>
+                <div style="display:flex;flex-direction:column;gap:5px;margin-left:8px;justify-content:center">
+                  <sc-for list="{{ bracketLegend }}" as="l" hint-placeholder-count="4">
+                    <span style="font-size:11px;color:oklch(52% 0.02 250)"><span style="{{ l.swatch }}"></span>{{ l.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-top:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 12px">Recently added</h2>
+          <sc-if value="{{ hasRecentSummative }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:100px 1fr 80px 90px 90px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+              <span>Date</span><span>Subject</span><span>Avg</span><span></span><span></span>
+            </div>
+            <sc-for list="{{ recentSummativeVM }}" as="r" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:100px 1fr 80px 90px 90px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span style="color:oklch(52% 0.02 250)">{{ r.date }}</span>
+                <span style="font-weight:600">{{ r.subject }}</span>
+                <span>{{ r.avgLabel }}</span>
+                <button style="{{ tableActionBtnStyle }}" onclick="{{ r.onEdit }}">Edit</button>
+                <button style="{{ tableDeleteBtnStyle }}" onclick="{{ r.onDelete }}">Delete</button>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ noRecentSummative }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No records added yet.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- SEL & HOLISTIC -->
+      <sc-if value="{{ isSel }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0">SEL & Holistic Support — Grade {{ gradeDisplay }}</h1>
+          <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12.5px;color:oklch(55% 0.02 250)">Select a specific grade to log an observation.</span>
+          </sc-if>
+          <sc-if value="{{ notAllGrade }}" hint-placeholder-val="{{ true }}">
+            <button style="{{ primaryBtnStyle }}" onclick="{{ goToSelForm }}">+ Log SEL data</button>
+          </sc-if>
+        </div>
+        <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">Adjust → resist → apply → practice → excel → thrive.</p>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:16px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0">Observation Tool + Self-Report, combined (Q12)</h2>
+            <select style="{{ selPeriodSelectStyle }}" onchange="{{ onSelPeriodChange }}">
+              <sc-for list="{{ selPeriodOptionsVM }}" as="opt" hint-placeholder-count="3">
+                <option value="{{ opt.value }}" selected="{{ opt.selected }}">{{ opt.label }}</option>
+              </sc-for>
+            </select>
+          </div>
+          <p style="margin:0 0 6px;font-size:12px;color:oklch(52% 0.02 250)">Kept as two distinct instruments, shown side by side — not one shared scale.</p>
+          <p style="margin:0 0 14px;font-size:11.5px;font-weight:600;color:oklch(45% 0.09 235)">{{ selPeriodLabel }}</p>
+          <sc-for list="{{ selRowsVM }}" as="s" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:170px 1fr 1fr;gap:14px;align-items:center;padding:9px 0;border-top:1px solid oklch(93% 0.006 250)">
+              <span style="font-size:12.5px;font-weight:600">{{ s.param }}</span>
+              <div>
+                <div style="font-size:10.5px;color:oklch(55% 0.02 250);margin-bottom:3px">Observation</div>
+                <div style="display:flex;height:10px;border-radius:4px;overflow:hidden;background:oklch(93% 0.006 250)">
+                  <div style="{{ s.obsThriveStyle }}"></div>
+                  <div style="{{ s.obsResistStyle }}"></div>
+                </div>
+              </div>
+              <div>
+                <div style="font-size:10.5px;color:oklch(55% 0.02 250);margin-bottom:3px">Self-Report</div>
+                <div style="display:flex;height:10px;border-radius:4px;overflow:hidden;background:oklch(93% 0.006 250)">
+                  <div style="{{ s.selfThriveStyle }}"></div>
+                  <div style="{{ s.selfResistStyle }}"></div>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:24px 0 4px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:16px;margin:0">Situational Judgment Test</h2>
+        </div>
+        <p style="margin:0 0 16px;font-size:11.5px;color:oklch(52% 0.02 250)">Provisional scoring — competency map and normalization still being finalized. Charts below use placeholder values.</p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0 0 10px">Coverage — Grades 6–10</h2>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">
+              <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ sjtCoveragePctLabel }}</div>
+              <div style="font-size:12px;color:oklch(52% 0.02 250)">of eligible students completed</div>
+            </div>
+            <div style="height:10px;border-radius:5px;background:oklch(93% 0.006 250);overflow:hidden">
+              <div style="{{ sjtCoverageStyle }};border-radius:5px"></div>
+            </div>
+          </div>
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+            <h2 style="font-family:Manrope,sans-serif;font-size:14px;margin:0 0 10px">Competency-map summary</h2>
+            <div style="display:flex;gap:8px">
+              <div style="display:flex;flex-direction:column;justify-content:space-between;height:120px">
+                <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="flex:1;display:flex;gap:8px;align-items:flex-end;height:120px">
+                <sc-for list="{{ sjtCompetencyVM }}" as="c" hint-placeholder-count="5">
+                  <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end">
+                    <span style="font-size:9px;font-weight:700;color:oklch(45% 0.02 250)">{{ c.scoreLabel }}</span>
+                    <div style="width:100%;max-width:22px;border-radius:5px 5px 2px 2px;{{ c.barStyle }}"></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex;gap:4px;margin-top:8px">
+              <sc-for list="{{ sjtCompetencyVM }}" as="c" hint-placeholder-count="5">
+                <span style="font-size:9.5px;color:oklch(52% 0.02 250);flex:1;text-align:center">{{ c.competency }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Response distribution by situation</h2>
+          <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">% of students selecting each answer option, per situation.</p>
+          <sc-for list="{{ sjtSituationsVM }}" as="s" hint-placeholder-count="4">
+            <div style="padding:10px 0;border-top:1px solid oklch(93% 0.006 250)">
+              <div style="font-size:12.5px;font-weight:600;margin-bottom:6px">{{ s.label }}</div>
+              <div style="display:flex;height:16px;border-radius:5px;overflow:hidden">
+                <sc-for list="{{ s.segments }}" as="seg" hint-placeholder-count="4">
+                  <div style="{{ seg.style }}">
+                    <sc-if value="{{ seg.showLabel }}" hint-placeholder-val="{{ true }}">{{ seg.label }}</sc-if>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap">
+            <sc-for list="{{ sjtOptionLegend }}" as="l" hint-placeholder-count="4">
+              <span style="font-size:11px;color:oklch(52% 0.02 250)"><span style="{{ l.swatch }}"></span>{{ l.label }}</span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-top:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 12px">Recently added</h2>
+          <sc-if value="{{ hasRecentSel }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:120px 1fr 90px 90px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+              <span>Date</span><span>Type</span><span></span><span></span>
+            </div>
+            <sc-for list="{{ recentSelVM }}" as="r" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:120px 1fr 90px 90px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span style="color:oklch(52% 0.02 250)">{{ r.date }}</span>
+                <span style="font-weight:600">{{ r.label }}</span>
+                <button style="{{ tableActionBtnStyle }}" onclick="{{ r.onEdit }}">Edit</button>
+                <button style="{{ tableDeleteBtnStyle }}" onclick="{{ r.onDelete }}">Delete</button>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ noRecentSel }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No records added yet.</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- ATTENDANCE + ENROLLMENT -->
+      <sc-if value="{{ isAttendance }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0">Attendance + Enrollment — Grade {{ gradeDisplay }}</h1>
+          <sc-if value="{{ isAllGrade }}" hint-placeholder-val="{{ false }}">
+            <span style="font-size:12.5px;color:oklch(55% 0.02 250)">Select a specific grade to take attendance or enroll a student.</span>
+          </sc-if>
+          <sc-if value="{{ notAllGrade }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:8px">
+              <button style="{{ secondaryTightBtnStyle }}" onclick="{{ openEnrollStudent }}">+ Enroll student</button>
+              <button style="{{ primaryBtnStyle }}" onclick="{{ openAttendanceEntry }}">+ Take today's attendance</button>
+            </div>
+          </sc-if>
+        </div>
+        <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">Monthly average, and who needs a check-in.</p>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:18px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">Average attendance % by month (Q5)</h2>
+          <p style="margin:0 0 14px;font-size:12px;color:oklch(52% 0.02 250)">{{ attendanceChartCaption }}</p>
+          <div style="display:flex;gap:8px">
+            <div style="display:flex;flex-direction:column;justify-content:space-between;height:120px">
+              <sc-for list="{{ pctAxisTicks }}" as="t" hint-placeholder-count="5">
+                <span style="font-size:9px;color:oklch(60% 0.02 250)">{{ t.label }}</span>
+              </sc-for>
+            </div>
+            <div style="flex:1">
+              <div style="display:flex;gap:16px">
+                <sc-for list="{{ attendanceMonthsVM }}" as="m" hint-placeholder-count="6">
+                  <div style="flex:1;display:flex;gap:4px;justify-content:center">
+                    <span style="width:16px;text-align:center;font-size:9.5px;font-weight:700;color:oklch(45% 0.02 250)">{{ m.pctLabel }}</span>
+                    <sc-if value="{{ showGradeCompare }}" hint-placeholder-val="{{ true }}">
+                      <span style="width:16px;text-align:center;font-size:9.5px;font-weight:700;color:oklch(60% 0.02 250)">{{ m.overallPctLabel }}</span>
+                    </sc-if>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="position:relative">
+                <div style="position:absolute;left:0;right:0;top:0;height:120px">
+                  <sc-for list="{{ pctAxisLinesVM }}" as="l" hint-placeholder-count="5">
+                    <div style="{{ l.style }}"></div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:16px;align-items:flex-end;height:120px;position:relative">
+                  <sc-for list="{{ attendanceMonthsVM }}" as="m" hint-placeholder-count="6">
+                    <div style="flex:1;display:flex;gap:4px;align-items:flex-end;justify-content:center;height:100%">
+                      <span style="width:16px;border-radius:4px 4px 1px 1px;{{ m.barStyle }}"></span>
+                      <sc-if value="{{ showGradeCompare }}" hint-placeholder-val="{{ true }}">
+                        <span style="width:16px;border-radius:4px 4px 1px 1px;{{ m.overallBarStyle }}"></span>
+                      </sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display:flex;gap:16px;margin-top:6px">
+                <sc-for list="{{ attendanceMonthsVM }}" as="m" hint-placeholder-count="6">
+                  <span style="flex:1;text-align:center;font-size:11px;color:oklch(52% 0.02 250)">{{ m.month }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:14px;margin-top:12px;font-size:11.5px;color:oklch(52% 0.02 250)">
+            <span><span style="display:inline-block;width:8px;height:8px;background:oklch(52% 0.1 235);border-radius:2px;margin-right:5px"></span>Grade {{ gradeDisplay }}</span>
+            <sc-if value="{{ showGradeCompare }}" hint-placeholder-val="{{ true }}">
+              <span><span style="display:inline-block;width:8px;height:8px;background:oklch(75% 0.03 235);border-radius:2px;margin-right:5px"></span>All grades</span>
+            </sc-if>
+          </div>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">7+ consecutive teaching days missed (Q6)</h2>
+          <p style="margin:0 0 12px;font-size:12px;color:oklch(52% 0.02 250)">Weekends/holidays excluded from the streak. Target: 0.</p>
+          <sc-for list="{{ absenceFlagsVM }}" as="f" hint-placeholder-count="2">
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid oklch(93% 0.006 250)">
+              <div style="flex:1"><span style="font-size:13px;font-weight:600">{{ f.name }}</span><span style="font-size:12px;color:oklch(52% 0.02 250)"> · {{ f.days }} days</span></div>
+              <button style="font-size:12px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ f.onAction }}">{{ f.actionLabel }}</button>
+            </div>
+          </sc-for>
+          <sc-if value="{{ noAbsenceFlags }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250);padding:8px 0">No students currently flagged — target met.</div>
+          </sc-if>
+          <sc-if value="{{ noRosterNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:11.5px;color:oklch(55% 0.02 250);margin-top:8px">{{ noRosterMessage }}</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-top:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 12px">Attendance records — Grade {{ gradeDisplay }}</h2>
+          <sc-if value="{{ hasRecentAttendance }}" hint-placeholder-val="{{ false }}">
+            <div style="display:grid;grid-template-columns:110px 1fr 90px 90px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+              <span>Date</span><span>Present / Total</span><span></span><span></span>
+            </div>
+            <sc-for list="{{ recentAttendanceVM }}" as="r" hint-placeholder-count="3">
+              <div style="display:grid;grid-template-columns:110px 1fr 90px 90px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span style="color:oklch(52% 0.02 250)">{{ r.date }}</span>
+                <span style="font-weight:600">{{ r.summary }}</span>
+                <button style="{{ tableActionBtnStyle }}" onclick="{{ r.onEdit }}">Edit</button>
+                <button style="{{ tableDeleteBtnStyle }}" onclick="{{ r.onDelete }}">Delete</button>
+              </div>
+            </sc-for>
+          </sc-if>
+          <sc-if value="{{ noRecentAttendance }}" hint-placeholder-val="{{ true }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">No records added yet.</div>
+          </sc-if>
+        </div>
+
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-top:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0 0 4px">All students — Grade {{ gradeDisplay }}</h2>
+          <p style="margin:0 0 12px;font-size:12px;color:oklch(52% 0.02 250)">Attendance % by month. Edit to update student info.</p>
+          <sc-if value="{{ hasRoster }}" hint-placeholder-val="{{ true }}">
+            <div style="overflow-x:auto">
+              <div style="display:grid;{{ studentsTableColsStyle }};min-width:640px;padding:8px 0;font-size:11px;font-weight:700;color:oklch(48% 0.02 250);border-bottom:1px solid oklch(93% 0.006 250)">
+                <span>Roll</span><span>Student</span><span>Gender</span>
+                <sc-for list="{{ monthHeaderLabels }}" as="mh" hint-placeholder-count="6">
+                  <span style="text-align:center">{{ mh.label }}</span>
+                </sc-for>
+                <span></span>
+              </div>
+              <sc-for list="{{ studentsTableVM }}" as="s" hint-placeholder-count="8">
+                <div style="display:grid;{{ studentsTableColsStyle }};min-width:640px;padding:8px 0;border-top:1px solid oklch(93% 0.006 250);font-size:12.5px;align-items:center">
+                  <span style="color:oklch(52% 0.02 250)">{{ s.rollNo }}</span>
+                  <span style="font-weight:600">{{ s.name }}</span>
+                  <span style="color:oklch(52% 0.02 250)">{{ s.gender }}</span>
+                  <sc-for list="{{ s.monthCells }}" as="mc" hint-placeholder-count="6">
+                    <span style="text-align:center;color:{{ mc.color }}">{{ mc.label }}</span>
+                  </sc-for>
+                  <button style="{{ tableActionBtnStyle }}" onclick="{{ s.onEdit }}">Edit</button>
+                </div>
+              </sc-for>
+            </div>
+          </sc-if>
+          <sc-if value="{{ noRosterNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250)">{{ noRosterMessage }}</div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- INDIVIDUAL GROWTH -->
+      <sc-if value="{{ isGrowth }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+          <h1 style="font-family:Manrope,sans-serif;font-size:22px;margin:0">Individual Student Growth (Q13)</h1>
+          <select style="{{ selPeriodSelectStyle }}" onchange="{{ onGrowthYearChange }}">
+            <sc-for list="{{ growthYearOptionsVM }}" as="y" hint-placeholder-count="2">
+              <option value="{{ y.value }}" selected="{{ y.selected }}">{{ y.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <p style="margin:0 0 20px;color:oklch(52% 0.02 250);font-size:13.5px">For targeted follow-up. Sortable — click a column. {{ growthYearNote }}</p>
+        <sc-if value="{{ hasRoster }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;overflow-x:auto">
+            <div style="display:grid;{{ growthColsStyle }};min-width:820px;padding:12px 18px;background:oklch(96% 0.005 250);font-size:11.5px;font-weight:700;color:oklch(48% 0.02 250)">
+              <button style="{{ sortHeaderStyles.roll }}" onclick="{{ setSortRoll }}">Roll</button>
+              <span>Grade</span>
+              <button style="{{ sortHeaderStyles.name }}" onclick="{{ setSortName }}">Student</button>
+              <span>Gender</span>
+              <span>Attendance %</span>
+              <span>Summative (BoY)</span>
+              <button style="{{ sortHeaderStyles.formative }}" onclick="{{ setSortFormative }}">Formative Δ</button>
+              <span>Compared</span>
+            </div>
+            <sc-for list="{{ growthRowsVM }}" as="r" hint-placeholder-count="8">
+              <div style="display:grid;{{ growthColsStyle }};min-width:820px;padding:11px 18px;border-top:1px solid oklch(93% 0.006 250);font-size:13px;align-items:center">
+                <span style="color:oklch(52% 0.02 250)">{{ r.rollNo }}</span>
+                <span style="color:oklch(52% 0.02 250)">{{ r.gradeLabel }}</span>
+                <span style="font-weight:600">{{ r.name }}</span>
+                <span style="color:oklch(52% 0.02 250)">{{ r.gender }}</span>
+                <span style="color:oklch(52% 0.02 250)">{{ r.attendanceLabel }}</span>
+                <span style="color:oklch(40% 0.02 250)">{{ r.boyLabel }}</span>
+                <span style="font-weight:700;color:{{ r.formativeColor }}">{{ r.formativeLabel }}</span>
+                <span style="font-size:11.5px;color:oklch(52% 0.02 250)">{{ r.comparedLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-if value="{{ noRosterNote }}" hint-placeholder-val="{{ false }}">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:24px;font-size:13px;color:oklch(52% 0.02 250)">{{ noRosterMessage }}</div>
+        </sc-if>
+      </sc-if>
+
+    </div>
+  </div>
+
+  <!-- MODALS -->
+  <sc-if value="{{ modal }}" hint-placeholder-val="{{ null }}">
+    <div style="position:fixed;inset:0;background:rgba(20,22,26,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:20px" onclick="{{ closeModalOnBackdrop }}">
+      <div style="background:#fff;border-radius:16px;max-width:{{ modalMaxWidth }};width:100%;max-height:86vh;overflow-y:auto;padding:24px" onclick="{{ stopClick }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+          <h2 style="font-family:Manrope,sans-serif;font-size:17px;margin:0">{{ modalTitle }}</h2>
+          <button style="border:none;background:none;font-size:18px;cursor:pointer;color:oklch(52% 0.02 250)" onclick="{{ closeModal }}">✕</button>
+        </div>
+
+        <!-- CONFIGURE ASSESSMENT -->
+        <sc-if value="{{ isConfigureModal }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <label style="font-size:12.5px;font-weight:600">Subject
+              <select style="{{ formFieldStyle }}" onchange="{{ setDraftSubject }}">
+                <sc-for list="{{ subjectOptionsVM }}" as="s" hint-placeholder-count="3">
+                  <option value="{{ s.value }}" selected="{{ s.selected }}">{{ s.label }}</option>
+                </sc-for>
+              </select>
+            </label>
+            <label style="font-size:12.5px;font-weight:600">Grade
+              <div style="{{ formFieldStyle }} background:oklch(96% 0.005 250);color:oklch(40% 0.02 250)">Grade {{ gradeDisplay }}</div>
+            </label>
+            <label style="font-size:12.5px;font-weight:600">Date conducted
+              <input type="date" value="{{ draftDate }}" oninput="{{ setDraftDate }}" style="{{ formFieldStyle }}"/>
+            </label>
+            <div style="font-size:12.5px;font-weight:600">
+              <sc-if value="{{ isConfigureSummativeModal }}" hint-placeholder-val="{{ false }}">
+                Objectives & max marks
+                <p style="margin:4px 0 8px;font-size:11.5px;font-weight:400;color:oklch(55% 0.02 250)">Up to 3 oral + 9 written objectives, entered by the teacher.</p>
+                <div style="margin-bottom:6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(52% 0.02 250)">Oral (max 3)</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ oralObjectiveRowsVM }}" as="o" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <input type="text" placeholder="e.g. Recite the poem with expression" value="{{ o.text }}" oninput="{{ o.onChangeText }}" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);font-size:12.5px;font-weight:500"/>
+                      <div style="display:flex;align-items:center;gap:6px;flex:none">
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onDec }}">−</button>
+                        <span style="font-size:13px;font-weight:700;min-width:18px;text-align:center">{{ o.maxMarks }}</span>
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onInc }}">+</button>
+                      </div>
+                      <button style="border:none;background:none;color:oklch(52% 0.15 20);font-size:16px;cursor:pointer;padding:2px 4px" onclick="{{ o.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ canAddOralObjective }}" hint-placeholder-val="{{ true }}">
+                  <button style="margin-top:8px;padding:6px 12px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;font-size:12px;font-weight:700;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ addOralObjective }}">+ Add oral objective</button>
+                </sc-if>
+                <div style="margin:16px 0 6px;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(52% 0.02 250)">Written (max 9)</div>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ writtenObjectiveRowsVM }}" as="o" hint-placeholder-count="1">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <input type="text" placeholder="e.g. Answer the following questions" value="{{ o.text }}" oninput="{{ o.onChangeText }}" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);font-size:12.5px;font-weight:500"/>
+                      <div style="display:flex;align-items:center;gap:6px;flex:none">
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onDec }}">−</button>
+                        <span style="font-size:13px;font-weight:700;min-width:18px;text-align:center">{{ o.maxMarks }}</span>
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onInc }}">+</button>
+                      </div>
+                      <button style="border:none;background:none;color:oklch(52% 0.15 20);font-size:16px;cursor:pointer;padding:2px 4px" onclick="{{ o.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ canAddWrittenObjective }}" hint-placeholder-val="{{ true }}">
+                  <button style="margin-top:8px;padding:6px 12px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;font-size:12px;font-weight:700;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ addWrittenObjective }}">+ Add written objective</button>
+                </sc-if>
+              </sc-if>
+              <sc-if value="{{ isConfigureFormativeModal }}" hint-placeholder-val="{{ true }}">
+                Objectives & max marks
+                <p style="margin:4px 0 8px;font-size:11.5px;font-weight:400;color:oklch(55% 0.02 250)">Enter up to 3 objectives for this assessment — no fixed competency list.</p>
+                <div style="display:flex;flex-direction:column;gap:8px">
+                  <sc-for list="{{ objectiveRowsVM }}" as="o" hint-placeholder-count="3">
+                    <div style="display:flex;align-items:center;gap:8px">
+                      <input type="text" placeholder="e.g. SWBAT read 2 lines from the textbook" value="{{ o.text }}" oninput="{{ o.onChangeText }}" style="flex:1;padding:8px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);font-size:12.5px;font-weight:500"/>
+                      <div style="display:flex;align-items:center;gap:6px;flex:none">
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onDec }}">−</button>
+                        <span style="font-size:13px;font-weight:700;min-width:18px;text-align:center">{{ o.maxMarks }}</span>
+                        <button style="{{ stepperBtnStyle }}" onclick="{{ o.onInc }}">+</button>
+                      </div>
+                      <button style="border:none;background:none;color:oklch(52% 0.15 20);font-size:16px;cursor:pointer;padding:2px 4px" onclick="{{ o.onRemove }}">✕</button>
+                    </div>
+                  </sc-for>
+                </div>
+                <sc-if value="{{ canAddObjective }}" hint-placeholder-val="{{ true }}">
+                  <button style="margin-top:8px;padding:6px 12px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;font-size:12px;font-weight:700;color:oklch(45% 0.09 235);cursor:pointer" onclick="{{ addObjectiveRow }}">+ Add objective</button>
+                </sc-if>
+              </sc-if>
+            </div>
+            <button style="{{ primaryBtnStyle }} margin-top:8px" onclick="{{ confirmConfigure }}">Create & enter scores →</button>
+          </div>
+        </sc-if>
+
+        <!-- SCORE ENTRY -->
+        <sc-if value="{{ isScoreEntryModal }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:12.5px;color:oklch(52% 0.02 250);margin:0 0 12px">{{ modalSubtitle }}</p>
+          <sc-if value="{{ hasRoster }}" hint-placeholder-val="{{ true }}">
+            <div style="border:1px solid oklch(90% 0.006 250);border-radius:12px;overflow-x:auto">
+              <div style="display:grid;{{ scoreEntryColsStyle }};padding:10px 16px;background:oklch(96% 0.005 250);font-size:11px;font-weight:700;color:oklch(48% 0.02 250)">
+                <span>Grade</span><span>Roll</span><span>Student</span>
+                <sc-for list="{{ competencyColumnsVM }}" as="col" hint-placeholder-count="2">
+                  <span style="display:inline-flex;align-items:center;gap:4px;position:relative">
+                    {{ col.label }}
+                    <span onMouseEnter="{{ col.onEnter }}" onMouseLeave="{{ col.onLeave }}" style="width:14px;height:14px;border-radius:50%;background:oklch(90% 0.02 235);color:oklch(42% 0.09 235);font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;cursor:help;flex:none;font-family:Manrope,sans-serif">
+                      i
+                      <sc-if value="{{ col.isHovered }}" hint-placeholder-val="{{ false }}">
+                        <span style="position:absolute;top:20px;left:0;background:oklch(22% 0.01 250);color:#fff;padding:8px 10px;border-radius:8px;font-size:11.5px;font-weight:500;white-space:normal;width:200px;z-index:20;box-shadow:0 8px 20px rgba(0,0,0,.25);text-transform:none;letter-spacing:normal;pointer-events:none">{{ col.fullText }}</span>
+                      </sc-if>
+                    </span>
+                  </span>
+                </sc-for>
+              </div>
+              <div style="display:grid;{{ scoreEntryColsStyle }};padding:6px 16px;background:oklch(98% 0.003 250);border-top:1px solid oklch(93% 0.006 250);font-size:10.5px;font-weight:600;color:oklch(55% 0.02 250)">
+                <span style="grid-column:1/4">Max marks</span>
+                <sc-for list="{{ competencyColumnsVM }}" as="col" hint-placeholder-count="2">
+                  <span>{{ col.maxMarks }}</span>
+                </sc-for>
+              </div>
+              <sc-for list="{{ scoreEntryRosterVM }}" as="s" hint-placeholder-count="8">
+                <div style="display:grid;{{ scoreEntryColsStyle }};padding:9px 16px;border-top:1px solid oklch(93% 0.006 250);align-items:center;font-size:13px">
+                  <span style="color:oklch(52% 0.02 250)">{{ s.gradeLabel }}</span>
+                  <span style="color:oklch(52% 0.02 250)">{{ s.rollNo }}</span>
+                  <span style="font-weight:600">{{ s.name }}</span>
+                  <sc-for list="{{ s.cells }}" as="cell" hint-placeholder-count="2">
+                    <input type="number" min="0" max="{{ cell.max }}" placeholder="{{ cell.placeholder }}" value="{{ cell.value }}" oninput="{{ cell.onChange }}" style="width:84px;padding:6px 8px;border-radius:7px;border:1px solid oklch(88% 0.006 250);font-size:13px"/>
+                  </sc-for>
+                </div>
+              </sc-for>
+            </div>
+            <button style="{{ primaryBtnStyle }} margin-top:14px" onclick="{{ confirmScoreEntry }}">Save scores</button>
+          </sc-if>
+          <sc-if value="{{ noRosterNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250);padding:12px 0">{{ noRosterMessage }}</div>
+          </sc-if>
+        </sc-if>
+
+        <!-- ATTENDANCE ENTRY -->
+        <sc-if value="{{ isAttendanceModal }}" hint-placeholder-val="{{ false }}">
+          <label style="font-size:12.5px;font-weight:600;display:block;margin-bottom:12px">Date
+            <input type="date" value="{{ attendanceDate }}" oninput="{{ setAttendanceDate }}" style="{{ formFieldStyle }}"/>
+          </label>
+          <sc-if value="{{ hasRoster }}" hint-placeholder-val="{{ true }}">
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+              <button style="{{ secondaryTightBtnStyle }}" onclick="{{ markAllPresent }}">Mark all present</button>
+              <button style="{{ secondaryTightBtnStyle }}" onclick="{{ markAllAbsent }}">Mark all absent</button>
+            </div>
+            <div style="border:1px solid oklch(90% 0.006 250);border-radius:12px;overflow:hidden">
+              <div style="display:grid;grid-template-columns:44px 56px 1fr 110px;padding:10px 16px;background:oklch(96% 0.005 250);font-size:11px;font-weight:700;color:oklch(48% 0.02 250)">
+                <span>Roll</span><span>Grade</span><span>Student</span><span>Present today</span>
+              </div>
+              <sc-for list="{{ attendanceRosterVM }}" as="s" hint-placeholder-count="8">
+                <div style="display:grid;grid-template-columns:44px 56px 1fr 110px;padding:9px 16px;border-top:1px solid oklch(93% 0.006 250);align-items:center;font-size:13px">
+                  <span style="color:oklch(52% 0.02 250)">{{ s.rollNo }}</span>
+                  <span style="color:oklch(52% 0.02 250)">{{ s.gradeLabel }}</span>
+                  <span style="font-weight:600">{{ s.name }}</span>
+                  <button style="{{ s.toggleStyle }}" onclick="{{ s.onToggle }}">{{ s.toggleLabel }}</button>
+                </div>
+              </sc-for>
+            </div>
+            <button style="{{ primaryBtnStyle }} margin-top:14px" onclick="{{ submitAttendance }}">Submit attendance</button>
+          </sc-if>
+          <sc-if value="{{ noRosterNote }}" hint-placeholder-val="{{ false }}">
+            <div style="font-size:12.5px;color:oklch(55% 0.02 250);padding:12px 0">{{ noRosterMessage }}</div>
+          </sc-if>
+        </sc-if>
+
+        <!-- ENROLL / EDIT STUDENT -->
+        <sc-if value="{{ isStudentFormModal }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;flex-direction:column;gap:16px">
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:oklch(52% 0.02 250);margin-bottom:8px">Basic Info</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <label style="font-size:12.5px;font-weight:600">Full Name
+                  <input type="text" value="{{ draftStudent.name }}" oninput="{{ setDraftStudentName }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Gender
+                  <select style="{{ formFieldStyle }}" onchange="{{ setDraftStudentGender }}">
+                    <option value="" selected="{{ draftGenderNone }}" disabled="{{ true }}">Select</option>
+                    <option value="M" selected="{{ draftGenderM }}">Male</option>
+                    <option value="F" selected="{{ draftGenderF }}">Female</option>
+                  </select>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Date Of Birth
+                  <input type="date" value="{{ draftStudent.dob }}" oninput="{{ setDob }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Section
+                  <select style="{{ formFieldStyle }}" onchange="{{ setSection }}">
+                    <sc-for list="{{ sectionOptionsVM }}" as="o" hint-placeholder-count="9">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+              </div>
+              <div style="margin-top:12px">
+                <div style="font-size:11px;font-weight:600;color:oklch(52% 0.02 250);margin-bottom:6px">Grade History</div>
+                <div style="border:1px solid oklch(90% 0.006 250);border-radius:9px;overflow:hidden">
+                  <div style="display:grid;grid-template-columns:1fr 2fr;background:oklch(96% 0.005 250)">
+                    <div style="padding:7px 10px;font-size:10.5px;font-weight:700;color:oklch(48% 0.02 250)">Academic Year</div>
+                    <div style="padding:7px 10px;font-size:10.5px;font-weight:700;color:oklch(48% 0.02 250)">Grade</div>
+                  </div>
+                  <sc-for list="{{ gradeHistoryRowsVM }}" as="gh" hint-placeholder-count="3">
+                    <div style="display:grid;grid-template-columns:1fr 2fr;align-items:center;border-top:1px solid oklch(93% 0.006 250)">
+                      <div style="padding:7px 10px;font-size:12px;color:oklch(52% 0.02 250)">{{ gh.year }}</div>
+                      <select onchange="{{ gh.onChange }}" style="width:100%;border:none;padding:7px 10px;font-size:12px;font-weight:600;background:transparent">
+                        <sc-for list="{{ gh.gradeOptionsVM }}" as="o" hint-placeholder-count="12">
+                          <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                        </sc-for>
+                      </select>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:oklch(52% 0.02 250);margin-bottom:8px">Family</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <label style="font-size:12.5px;font-weight:600">Father's Name
+                  <input type="text" value="{{ draftStudent.fatherName }}" oninput="{{ setFatherName }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Mother's Name
+                  <input type="text" value="{{ draftStudent.motherName }}" oninput="{{ setMotherName }}" style="{{ formFieldStyle }}"/>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:oklch(52% 0.02 250);margin-bottom:8px">Category & Support</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <label style="font-size:12.5px;font-weight:600">Social Category
+                  <select style="{{ formFieldStyle }}" onchange="{{ setSocialCategory }}">
+                    <sc-for list="{{ socialCategoryOptionsVM }}" as="o" hint-placeholder-count="5">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Minority Group
+                  <select style="{{ formFieldStyle }}" onchange="{{ setMinorityGroup }}">
+                    <sc-for list="{{ minorityGroupOptionsVM }}" as="o" hint-placeholder-count="6">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">BPL Beneficiary
+                  <select style="{{ formFieldStyle }}" onchange="{{ setBpl }}">
+                    <sc-for list="{{ bplOptionsVM }}" as="o" hint-placeholder-count="2">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">CWSN
+                  <select style="{{ formFieldStyle }}" onchange="{{ setCwsn }}">
+                    <sc-for list="{{ cwsnOptionsVM }}" as="o" hint-placeholder-count="2">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+                <sc-if value="{{ showImpairmentField }}" hint-placeholder-val="{{ false }}">
+                  <label style="font-size:12.5px;font-weight:600">Type Of Impairment
+                    <input type="text" value="{{ draftStudent.impairmentType }}" oninput="{{ setImpairmentType }}" style="{{ formFieldStyle }}"/>
+                  </label>
+                </sc-if>
+                <label style="font-size:12.5px;font-weight:600">Repeater This Year
+                  <select style="{{ formFieldStyle }}" onchange="{{ setRepeater }}">
+                    <sc-for list="{{ repeaterOptionsVM }}" as="o" hint-placeholder-count="2">
+                      <option value="{{ o.value }}" selected="{{ o.selected }}">{{ o.label }}</option>
+                    </sc-for>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:oklch(52% 0.02 250);margin-bottom:8px">IDs & Contact</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                <label style="font-size:12.5px;font-weight:600">Student PEN
+                  <input type="text" value="{{ draftStudent.pen }}" oninput="{{ setPen }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Aadhaar Number
+                  <input type="text" value="{{ draftStudent.aadhaar }}" oninput="{{ setAadhaar }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">APAAR ID
+                  <input type="text" value="{{ draftStudent.apaarId }}" oninput="{{ setApaarId }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600">Mobile Number
+                  <input type="text" value="{{ draftStudent.mobile }}" oninput="{{ setMobile }}" style="{{ formFieldStyle }}"/>
+                </label>
+                <label style="font-size:12.5px;font-weight:600;grid-column:1/-1">Address
+                  <textarea rows="2" oninput="{{ setAddress }}" style="{{ formFieldStyle }} resize:vertical" value="{{ draftStudent.address }}"></textarea>
+                </label>
+              </div>
+            </div>
+
+            <button style="{{ primaryBtnStyle }} margin-top:4px" onclick="{{ onSubmitStudentForm }}">{{ submitStudentLabel }}</button>
+          </div>
+        </sc-if>
+
+        <!-- SEL ENTRY -->
+        <sc-if value="{{ isSelModal }}" hint-placeholder-val="{{ false }}">
+          <p style="font-size:12.5px;color:oklch(52% 0.02 250);margin:0 0 12px">Combined SEL entry (Observation Tool rubric + Self-Report statements) — wireframed here, wired next pass.</p>
+          <div style="height:120px;border-radius:10px;background:repeating-linear-gradient(135deg,oklch(96% 0.004 250) 0 10px,oklch(98% 0.003 250) 10px 20px);border:1px dashed oklch(85% 0.006 250);display:flex;align-items:center;justify-content:center;font-family:monospace;font-size:11.5px;color:oklch(55% 0.02 250)">SEL entry — observation + self-report</div>
+          <button style="{{ primaryBtnStyle }} margin-top:14px" onclick="{{ confirmSelEntry }}">Done</button>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+function seeded(n){ const x = Math.sin(n*12.9898)*43758.5453; return x - Math.floor(x); }
+function initials(name){ return name.split(' ').map(w=>w[0]).join('').toUpperCase(); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function monthAbbr(dateStr){ return new Date(dateStr+'T00:00:00').toLocaleString('en-US',{month:'short'}); }
+function withRounds(list){
+  const counts = {};
+  return list.map(a=>{
+    const mo = monthAbbr(a.date);
+    counts[mo] = (counts[mo]||0)+1;
+    return {...a, roundLabel: mo+'-R'+counts[mo]};
+  });
+}
+
+class Component extends DCLogic {
+  constructor(props){
+    super(props);
+    const data = this.buildData();
+    this.state = {
+      role: 'teacher', tab: 'overview', grade: '3',
+      storyMode: false, toast: null, sortKey: 'roll', sortDir: 'asc',
+      modal: null, draft: {}, draftStudent: {}, selPeriodIdx: 0, formativeFilterId: null, growthYear: 'current',
+      attendanceDate: todayISO(), attendanceLogs: {}, selLogs: {},
+      data
+    };
+  }
+
+  buildData(){
+    const grades = ['LKG','UKG','1','2','3','4','5','6','7','8','9','10'].map(id=>({id, active:true}));
+    const activeIds = grades.map(g=>g.id);
+    const months = ['Apr','May','Jun','Jul','Aug','Sep'];
+    const competencies = ['Collaboration','Self-Regulation','Problem Solving','Communication'];
+    const subjects = ['Math','Language','EVS'];
+    const rosterGrades = ['LKG','3','5'];
+    const names = [
+      ['Aarav Shah','M'],['Diya Mehta','F'],['Rohan Kadam','M'],['Sneha Rao','F'],
+      ['Kabir Sheikh','M'],['Priya Nair','F'],['Vivaan Joshi','M'],['Anaya Gupta','F']
+    ];
+    const rosters = {};
+    rosterGrades.forEach((g, gi)=>{
+      rosters[g] = names.map(([name,gender], i)=>{
+        const seed = gi*30+i;
+        const monthlyPct = months.map((m,mi)=> Math.round(Math.min(99,Math.max(55,72+seeded(seed*3+mi*5)*26))));
+        return {
+          id: g+'-'+i, name, gender, rollNo: i+1, gradeLabel: g,
+          consecAbsent: g==='3' && i<2 ? 8 : Math.floor(seeded(seed*1.7)*4),
+          present: true,
+          formativeDelta: Math.round((seeded(seed*4.1)-0.35)*24),
+          summativeDelta: Math.round((seeded(seed*5.9)-0.4)*20),
+          monthlyPct
+        };
+      });
+    });
+
+    const attendanceByGrade = {};
+    activeIds.forEach((g,gi)=>{
+      attendanceByGrade[g] = months.map((m,mi)=>{
+        let base = 66 + seeded(gi*7+mi*2.3)*32;
+        if (g==='3') base -= mi*1.8;
+        return { month: m, pct: Math.round(Math.min(98,Math.max(58,base))) };
+      });
+    });
+
+    const formativeCoverage = {};
+    activeIds.forEach((g,gi)=>{
+      formativeCoverage[g] = months.map((m,mi)=> ({ month:m, pct: Math.round(70 + seeded(gi*11+mi*3)*28) }));
+    });
+    const summativeCoverage = {};
+    activeIds.forEach((g,gi)=> summativeCoverage[g] = { pre: Math.round(75+seeded(gi*13)*20), post: Math.round(80+seeded(gi*17)*18) });
+
+    const bracketMovement = {};
+    activeIds.forEach((g,gi)=>{
+      const up = Math.round(30+seeded(gi*29)*22);
+      const down = g==='4' ? 22 : Math.round(8+seeded(gi*31)*10);
+      bracketMovement[g] = { up, down, stay: 100-up-down };
+    });
+
+    const bracketBySubject = {};
+    subjects.forEach((s,si)=>{
+      const segs = [8,22,40,30].map((v,i)=> Math.max(4, v + Math.round((seeded(si*3+i)-0.5)*10)));
+      const total = segs.reduce((a,b)=>a+b,0);
+      bracketBySubject[s] = segs.map(v=> Math.round(v/total*100));
+    });
+
+    const brackets = ['Below Basic','Basic','Proficient','Advanced'];
+    const formativeBracketBySubject = {};
+    subjects.forEach((s,si)=>{
+      const segs = [14,28,36,22].map((v,i)=> Math.max(4, v + Math.round((seeded(si*5+i+50)-0.5)*10)));
+      const total = segs.reduce((a,b)=>a+b,0);
+      formativeBracketBySubject[s] = segs.map(v=> Math.round(v/total*100));
+    });
+    const sjtSituations = ['Situation 1 — Group project conflict','Situation 2 — Peer exclusion','Situation 3 — Unfair grading concern','Situation 4 — Deadline pressure'].map((label,si)=>{
+      const raw = [0,1,2,3].map(i=> Math.max(5, Math.round(25 + (seeded(si*7+i)-0.5)*40)));
+      const total = raw.reduce((a,b)=>a+b,0);
+      return { label, options: raw.map(v=> Math.round(v/total*100)) };
+    });
+    const sjtDomains = ['Collaboration','Emotional Regulation','Responsible Decision-Making','Self-Awareness','Self-Regulation'];
+    const sjtCompetencyScores = sjtDomains.map((c,ci)=> ({ competency:c, score: Math.round(55+seeded(ci*19+60)*30) }));
+    const sjtCoveragePct = Math.round(60 + seeded(88)*30);
+    const selParamsBase = ['Emotional Regulation','Empathy','Collaboration','Self-Awareness','Responsible Decision-Making'];
+    const selPeriods = [
+      { ay:'AY 2025–26', month:'Sep' },
+      { ay:'AY 2025–26', month:'Jul' },
+      { ay:'AY 2025–26', month:'May' }
+    ].map((period, pi)=>{
+      const sel = selParamsBase.map((p,i)=>{
+        const drift = pi*4;
+        const obsThrive = Math.max(5, Math.round(20+seeded(i*3+drift)*20 - drift));
+        const obsResist = Math.round(5+seeded(i*5+drift)*8 + drift*0.6);
+        const selfThrive = Math.max(5, Math.round(18+seeded(i*7+drift)*22 - drift));
+        const selfResist = Math.round(4+seeded(i*11+drift)*9 + drift*0.6);
+        return { param:p, obsThrive, obsResist, selfThrive, selfResist };
+      });
+      return { ...period, sel };
+    });
+
+    const actionQueue = [
+      { id:1, type:'attendance', title:'2 students in Grade 3 have missed 7+ consecutive teaching days', grade:'3', status:'open' },
+      { id:3, type:'academic', title:'Self-Regulation regressing 2nd month running in Grade 3', grade:'3', status:'open' },
+      { id:5, type:'coverage', title:'Formative assessment coverage below 80% in Grade 4', grade:'4', status:'open' }
+    ];
+
+    const enrollment = {};
+    activeIds.forEach((g,gi)=>{
+      const total = 42+Math.round(seeded(gi*41)*14);
+      const boys = Math.round(total*(0.47+seeded(gi*43)*0.06));
+      enrollment[g] = { boys, girls: total-boys };
+    });
+
+    const formativeAssessments = {}, summativeAssessments = {};
+    rosterGrades.forEach((g,gi)=>{
+      const roster = rosters[g];
+      const mk = (subject, date, competencyDefs, avgBase, seedBase)=>{
+        const scores = {};
+        roster.forEach((s,i)=>{
+          scores[s.id] = {};
+          competencyDefs.forEach((c,ci)=> scores[s.id][c.name] = Math.max(0, Math.min(c.maxMarks, Math.round(avgBase + (seeded(seedBase+i+ci)-0.5)*2))));
+        });
+        return { id: subject+'-'+date, subject, date, competencies: competencyDefs, scores };
+      };
+      const defCompetencies = [{name:'Collaboration',maxMarks:5},{name:'Self-Regulation',maxMarks:5}];
+      // formative: teacher-entered objectives per assessment, no standard competency list
+      const formativeObjectiveSets = [
+        [{name:'SWBAT write 10 dictation words.',maxMarks:5},{name:'SWBAT read sentences with learned words.',maxMarks:5},{name:'SWBAT speak 2 sentences about an object.',maxMarks:4}],
+        [{name:'Students will be able to count and write tens and units.',maxMarks:5},{name:'Students will be able to break units and tens from a given number.',maxMarks:5}]
+      ];
+      formativeAssessments[g] = withRounds([
+        mk('Math','2026-07-12',formativeObjectiveSets[0],3,gi*10+1),
+        mk('English','2026-08-14',formativeObjectiveSets[1],3.5,gi*10+2)
+      ]);
+      summativeAssessments[g] = withRounds([
+        mk('Language','2026-05-20',defCompetencies,3.2,gi*10+5),
+        mk('Language','2026-08-18',defCompetencies,3.8,gi*10+6)
+      ]);
+    });
+
+    return {
+      grades, months, competencies, subjects, rosterGrades, rosters,
+      attendanceByGrade, formativeCoverage, summativeCoverage,
+      bracketMovement, bracketBySubject, formativeBracketBySubject, brackets, selPeriods, actionQueue, enrollment,
+      formativeAssessments, summativeAssessments,
+      sjtSituations, sjtCompetencyScores, sjtCoveragePct
+    };
+  }
+
+  showToast(msg){
+    this.setState({toast: msg});
+    clearTimeout(this._t);
+    this._t = setTimeout(()=> this.setState({toast:null}), 2600);
+  }
+
+  selectGrade(g){ this.setState({grade: g.id}); }
+  setTab(t){ this.setState({tab:t}); }
+  setRole(r){ this.setState({role:r}); }
+  refreshData(){ this.showToast('Data refreshed just now.'); }
+
+  markActioned(id){
+    const q = this.state.data.actionQueue.map(a=> a.id===id ? {...a, status:'actioned'} : a);
+    this.setState({data:{...this.state.data, actionQueue:q}});
+    this.showToast('Marked actioned — updated just now.');
+  }
+
+  openModal(type, extra){
+    const draft = type==='configure-formative'
+      ? { subject:'Math', date: todayISO(), objectives:[{text:'',maxMarks:5}] }
+      : { subject:'Math', date: todayISO(), oralObjectives:[{text:'',maxMarks:5}], writtenObjectives:[{text:'',maxMarks:5}] };
+    this.setState({modal: {type, ...extra}, draft});
+  }
+  closeModal(){ this.setState({modal:null, draft:{}, draftStudent:{}}); }
+
+  setDraft(key,val){ this.setState(s=>({draft:{...s.draft, [key]:val}})); }
+
+  setObjectiveText(field, idx, val){ this.setState(s=>({draft:{...s.draft, [field]: s.draft[field].map((o,i)=> i===idx ? {...o, text:val} : o)}})); }
+  bumpObjectiveMax(field, idx, delta){ this.setState(s=>({draft:{...s.draft, [field]: s.draft[field].map((o,i)=> i===idx ? {...o, maxMarks: Math.max(1, Math.min(10, o.maxMarks+delta))} : o)}})); }
+  addObjectiveRow(field, cap){ this.setState(s=>({draft:{...s.draft, [field]: s.draft[field].length<cap ? [...s.draft[field], {text:'',maxMarks:5}] : s.draft[field]}})); }
+  removeObjectiveRow(field, idx){ this.setState(s=>({draft:{...s.draft, [field]: s.draft[field].filter((o,i)=>i!==idx)}})); }
+
+  confirmConfigure(){
+    const st = this.state, g = st.grade, draft = st.draft, isSummative = st.modal.type==='configure-summative';
+    const kind = isSummative ? 'summativeAssessments' : 'formativeAssessments';
+    const list = st.data[kind][g] || [];
+    const toItems = (arr, category)=> (arr||[]).filter(o=>o.text && o.text.trim()).map(o=> ({name:o.text.trim(), maxMarks:o.maxMarks, category}));
+    const competencies = isSummative
+      ? [...toItems(draft.oralObjectives,'oral'), ...toItems(draft.writtenObjectives,'written')]
+      : toItems(draft.objectives, null);
+    const assessment = { id: draft.subject+'-'+(draft.date||('draft'+Date.now())), subject: draft.subject, date: draft.date||todayISO(), competencies, scores:{} };
+    const updatedList = withRounds([...list, assessment]);
+    const dataKey = { ...st.data, [kind]: { ...st.data[kind], [g]: updatedList } };
+    this.setState({ data: dataKey, modal: { type: isSummative?'score-entry-summative':'score-entry-formative', assessmentId: assessment.id }, draft:{} });
+  }
+
+  deleteAssessment(kind, id){
+    const st = this.state, g = st.grade;
+    const list = (st.data[kind][g]||[]).filter(a=>a.id!==id);
+    this.setState({data:{...st.data, [kind]: {...st.data[kind], [g]: list}}});
+    this.showToast('Record deleted.');
+  }
+
+  setScoreDraft(studentId, competency, val){
+    this._scoreDraft = this._scoreDraft || {};
+    this._scoreDraft[studentId] = {...(this._scoreDraft[studentId]||{}), [competency]: val};
+    this.forceUpdate();
+  }
+  confirmScoreEntry(){
+    const st = this.state, g = st.grade, isSum = st.modal.type==='score-entry-summative';
+    const kind = isSum ? 'summativeAssessments' : 'formativeAssessments';
+    const list = st.data[kind][g] || [];
+    const updated = list.map(a=>{
+      if (a.id !== st.modal.assessmentId) return a;
+      const scores = {...a.scores};
+      Object.keys(this._scoreDraft||{}).forEach(sid=>{
+        scores[sid] = {...(scores[sid]||{})};
+        Object.keys(this._scoreDraft[sid]).forEach(cname=> scores[sid][cname] = Number(this._scoreDraft[sid][cname]));
+      });
+      return {...a, scores};
+    });
+    this._scoreDraft = {};
+    this.setState({ data:{...st.data, [kind]: {...st.data[kind], [g]: updated}}, modal:null });
+    this.showToast('Scores saved — averages updated just now.');
+  }
+
+  toggleAttendance(studentId){
+    const g = this.state.grade;
+    const rosters = {...this.state.data.rosters, [g]: this.state.data.rosters[g].map(s=> s.id===studentId ? {...s, present: !s.present} : s)};
+    this.setState({data:{...this.state.data, rosters}});
+  }
+  markAllAttendance(present){
+    const g = this.state.grade;
+    const rosters = {...this.state.data.rosters, [g]: this.state.data.rosters[g].map(s=> ({...s, present}))};
+    this.setState({data:{...this.state.data, rosters}});
+  }
+  setAttendanceDate(val){ this.setState({attendanceDate: val}); }
+  submitAttendance(){
+    const g = this.state.grade, st = this.state;
+    const roster = st.data.rosters[g].map(s=>{
+      const absentToday = !s.present;
+      const consecAbsent = absentToday ? s.consecAbsent+1 : 0;
+      return {...s, consecAbsent};
+    });
+    const rosters = {...st.data.rosters, [g]: roster};
+    const presentCount = roster.filter(s=>!s.consecAbsent || s.consecAbsent===0).length;
+    const pct = Math.round(presentCount/roster.length*100);
+    const months = st.data.attendanceByGrade[g].slice();
+    months[months.length-1] = {...months[months.length-1], pct: Math.round((months[months.length-1].pct+pct)/2)};
+    const attendanceByGrade = {...st.data.attendanceByGrade, [g]: months};
+    const log = { id: 'att-'+g+'-'+st.attendanceDate+'-'+Date.now(), date: st.attendanceDate, present: presentCount, total: roster.length };
+    const attendanceLogs = {...st.attendanceLogs, [g]: [...(st.attendanceLogs[g]||[]), log]};
+    this.setState({data:{...st.data, rosters, attendanceByGrade}, attendanceLogs, modal:null});
+    this.showToast('Attendance submitted — dashboards updated just now.');
+  }
+  deleteAttendanceLog(id){
+    const g = this.state.grade;
+    const logs = (this.state.attendanceLogs[g]||[]).filter(l=>l.id!==id);
+    this.setState({attendanceLogs:{...this.state.attendanceLogs, [g]: logs}});
+    this.showToast('Record deleted.');
+  }
+  confirmSelEntry(){
+    const g = this.state.grade, st = this.state;
+    const log = { id:'sel-'+g+'-'+Date.now(), date: todayISO() };
+    const selLogs = {...st.selLogs, [g]: [...(st.selLogs[g]||[]), log]};
+    this.setState({selLogs, modal:null});
+    this.showToast('SEL observation logged.');
+  }
+  deleteSelLog(id){
+    const g = this.state.grade;
+    const logs = (this.state.selLogs[g]||[]).filter(l=>l.id!==id);
+    this.setState({selLogs:{...this.state.selLogs, [g]: logs}});
+    this.showToast('Record deleted.');
+  }
+
+  setDraftStudent(key,val){ this.setState(s=>({draftStudent:{...s.draftStudent, [key]:val}})); }
+  emptyDraftStudent(){
+    return { name:'', gender:'', dob:'', section:'', fatherName:'', motherName:'',
+      socialCategory:'General', minorityGroup:'None', bpl:'No', cwsn:'No', impairmentType:'', repeater:'No',
+      pen:'', aadhaar:'', apaarId:'', mobile:'', address:'', gradeHistory:{} };
+  }
+  setGradeHistory(year, val){ this.setState(s=>({draftStudent:{...s.draftStudent, gradeHistory:{...(s.draftStudent.gradeHistory||{}), [year]:val}}})); }
+  openEnrollStudent(){ this.setState({modal:{type:'enroll-student'}, draftStudent:this.emptyDraftStudent()}); }
+  openEditStudent(id){
+    const g = this.state.grade, s = this.state.data.rosters[g].find(x=>x.id===id);
+    this.setState({modal:{type:'edit-student', studentId:id}, draftStudent:{...this.emptyDraftStudent(), ...s}});
+  }
+  confirmEnrollStudent(){
+    const g = this.state.grade, st = this.state, ds = st.draftStudent;
+    const roster = st.data.rosters[g]||[];
+    const nextRoll = roster.length ? Math.max(...roster.map(r=>r.rollNo))+1 : 1;
+    const newStudent = {
+      ...ds, id: g+'-new-'+Date.now(), name: ds.name||'New Student', gender: ds.gender||'M',
+      rollNo: nextRoll, gradeLabel: g, consecAbsent:0, present:true, formativeDelta:0, summativeDelta:0,
+      monthlyPct: st.data.months.map(()=>90)
+    };
+    const rosters = {...st.data.rosters, [g]: [...roster, newStudent]};
+    const rosterGrades = st.data.rosterGrades.includes(g) ? st.data.rosterGrades : [...st.data.rosterGrades, g];
+    this.setState({data:{...st.data, rosters, rosterGrades}, modal:null, draftStudent:{}});
+    this.showToast('Student enrolled.');
+  }
+  confirmEditStudent(){
+    const g = this.state.grade, st = this.state;
+    const rosters = {...st.data.rosters, [g]: st.data.rosters[g].map(s=> s.id===st.modal.studentId ? {...s, ...st.draftStudent} : s)};
+    this.setState({data:{...st.data, rosters}, modal:null, draftStudent:{}});
+    this.showToast('Student info updated.');
+  }
+
+  setSort(key){ this.setState(s=> ({ sortKey:key, sortDir: s.sortKey===key && s.sortDir==='desc' ? 'asc':'desc' })); }
+  setSelPeriod(idx){ this.setState({selPeriodIdx: Number(idx)}); }
+  setFormativeFilter(val){ this.setState({formativeFilterId: val==='latest' ? null : val}); }
+  setGrowthYear(val){ this.setState({growthYear: val}); }
+
+  renderVals(){
+    const st = this.state, d = st.data;
+    const grade = st.grade;
+    const isAllGrade = grade==='all', notAllGrade = !isAllGrade;
+    const gradeDisplay = isAllGrade ? 'All' : grade;
+    const hasRoster = d.rosterGrades.includes(grade);
+    const roster = hasRoster ? d.rosters[grade] : [];
+    const activeIds = d.grades.map(g=>g.id);
+    const noRosterMessage = isAllGrade ? 'Select a specific grade to see student-level detail.' : 'Full roster demo lives on Grades LKG, 3 and 5 — select one to see student-level detail.';
+
+    const CH = 120;
+    const makeAxis = (h)=>{
+      const ticksVM = [100,75,50,25,0].map(v=>({label:v+'%'}));
+      const linesVM = [0,25,50,75,100].map(v=>({ style:`position:absolute;left:0;right:0;bottom:${v/100*h}px;border-top:1px dashed oklch(91% 0.006 250)` }));
+      return {ticksVM, linesVM};
+    };
+    const axis120 = makeAxis(120), axis100 = makeAxis(100), axis130 = makeAxis(130);
+    const pctAxisTicks = axis120.ticksVM, pctAxisLinesVM = axis120.linesVM;
+    const pctAxisLines100VM = axis100.linesVM, pctAxisLines130VM = axis130.linesVM;
+
+    const gradesVM = [{id:'all',label:'All'}, ...d.grades].map(g=>({
+      label: g.id==='all' ? 'All' : g.id,
+      style: `padding:6px 10px;border-radius:8px;font-size:12px;font-weight:700;border:1px solid ${g.id===grade?'oklch(80% 0.16 92)':'oklch(90% 0.006 250)'};background:${g.id===grade?'oklch(80% 0.16 92)':'#fff'};color:${g.id===grade?'oklch(24% 0.03 90)':'oklch(30% 0.01 250)'};cursor:pointer`,
+      onClick: ()=> this.selectGrade(g)
+    }));
+
+    const navDefs = [
+      {id:'overview', label:'Overview'},
+      {id:'formative', label:'Formative Assessments'},
+      {id:'summative', label:'Summative Assessments'},
+      {id:'sel', label:'SEL & Holistic'},
+      {id:'growth', label:'Individual Growth'},
+      {id:'attendance', label:'Attendance + Enrollment'}
+    ];
+    const navItemsVM = navDefs.map(n=>({
+      label:n.label,
+      style:`display:flex;align-items:center;gap:9px;text-align:left;padding:10px 12px;border-radius:9px;border:none;background:${st.tab===n.id?'oklch(92% 0.09 92)':'transparent'};color:${st.tab===n.id?'oklch(32% 0.06 85)':'oklch(30% 0.01 250)'};font-size:13px;font-weight:${st.tab===n.id?700:500};cursor:pointer`,
+      dotStyle:`width:6px;height:6px;border-radius:50%;background:${st.tab===n.id?'oklch(70% 0.16 92)':'oklch(80% 0.006 250)'}`,
+      onClick: ()=> this.setTab(n.id)
+    }));
+
+    const roleBtn = (active)=> `padding:7px 14px;border-radius:8px;border:none;font-size:12.5px;font-weight:700;cursor:pointer;background:${active?'#fff':'transparent'};color:${active?'oklch(30% 0.01 250)':'oklch(52% 0.02 250)'};box-shadow:${active?'0 1px 2px rgba(0,0,0,.06)':'none'}`;
+
+    const actionQueueVM = d.actionQueue.map(a=>({
+      title:a.title, grade:a.grade,
+      typeLabel: a.type==='attendance'?'Attendance':a.type==='academic'?'Academic':'Coverage',
+      statusLabel: a.status==='open'?'Open':'Actioned',
+      showButton: a.status==='open',
+      dotStyle:`width:8px;height:8px;border-radius:50%;background:${a.status==='open'?'oklch(56% 0.17 20)':'oklch(60% 0.12 155)'};flex:none`,
+      onAction: ()=> this.markActioned(a.id)
+    }));
+
+    // all-grades aggregates
+    const overallByMonth = d.months.map((m,mi)=>{
+      const vals = activeIds.map(g=> (d.attendanceByGrade[g][mi]||{pct:0}).pct);
+      return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    });
+    const overallCoverageByMonth = d.months.map((m,mi)=>{
+      const vals = activeIds.map(g=> (d.formativeCoverage[g][mi]||{pct:0}).pct);
+      return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
+    });
+    const overallSummative = { pre: Math.round(activeIds.reduce((s,g)=>s+d.summativeCoverage[g].pre,0)/activeIds.length), post: Math.round(activeIds.reduce((s,g)=>s+d.summativeCoverage[g].post,0)/activeIds.length) };
+
+    const enr = isAllGrade
+      ? activeIds.reduce((acc,g)=>{ const e=d.enrollment[g]; return {boys:acc.boys+e.boys, girls:acc.girls+e.girls}; }, {boys:0,girls:0})
+      : (d.enrollment[grade] || {boys:0,girls:0});
+    const att = isAllGrade ? d.months.map((m,mi)=>({month:m, pct:overallByMonth[mi]})) : (d.attendanceByGrade[grade] || []);
+    const showGradeCompare = !isAllGrade;
+    const lastAtt = att[att.length-1] || {pct:0};
+    const coverage = isAllGrade ? d.months.map((m,mi)=>({month:m, pct:overallCoverageByMonth[mi]})) : (d.formativeCoverage[grade] || []);
+    const lastCoverage = coverage[coverage.length-1] || {pct:0};
+
+    const statCards = [
+      { label:'Enrollment', value: (enr.boys+enr.girls)+' students', sub: enr.boys+' boys · '+enr.girls+' girls', subColor:'oklch(52% 0.02 250)', iconStyle:'width:10px;height:10px;border-radius:3px;background:oklch(52% 0.1 235)' },
+      { label:'Attendance this month', value: lastAtt.pct+'%', sub: lastAtt.pct<90?'Below target range':'On track', subColor: lastAtt.pct<90?'oklch(56% 0.17 20)':'oklch(58% 0.12 155)', iconStyle:'width:10px;height:10px;border-radius:3px;background:oklch(58% 0.12 155)' },
+      { label:'Formative coverage', value: lastCoverage.pct+'%', sub:'Target: TBD with Khoj team', subColor:'oklch(52% 0.02 250)', iconStyle:'width:10px;height:10px;border-radius:3px;background:oklch(45% 0.09 235)' }
+    ];
+    const thresholdAlert = (!isAllGrade && lastAtt.pct<85) ? `Grade ${grade} attendance dropped to ${lastAtt.pct}% — below the 85% watch line.` : null;
+
+    const growthAvg = Math.round(activeIds.reduce((s,g)=>s+d.bracketMovement[g].up,0)/activeIds.length);
+    const cur = d.selPeriods[0].sel;
+    const selThriveAvg = Math.round(cur.reduce((s,p)=>s+p.obsThrive+p.selfThrive,0)/(cur.length*2));
+    const orgKpiCards = [
+      { label:'Academic growth — moved up a bracket', value: growthAvg+'%', barStyle:`height:100%;width:${growthAvg}%;background:oklch(58% 0.12 155)`, note:'Org KPI · target TBD' },
+      { label:'SEL — thriving, avg. across parameters', value: selThriveAvg+'%', barStyle:`height:100%;width:${selThriveAvg}%;background:oklch(52% 0.1 235)`, note:'Org KPI · target TBD' },
+      { label:'Formative growth vs. 10% goal', value:'6.4%', barStyle:`height:100%;width:64%;background:oklch(68% 0.15 55)`, note:'Stated program goal: 10% increment per student' }
+    ];
+    const bracketMovementRowStyle = `display:flex;gap:${activeIds.length>8?6:14}px`;
+    const bracketMovementVM = activeIds.map(g=>{
+      const b = d.bracketMovement[g];
+      return { grade:g, upLabel: b.up+'%',
+        upStyle:`height:${b.up}%;background:oklch(60% 0.12 155)`,
+        stayStyle:`height:${b.stay}%;background:oklch(80% 0.01 250)`,
+        downStyle:`height:${b.down}%;background:oklch(56% 0.17 20)`
+      };
+    });
+    let movers = [];
+    d.rosterGrades.forEach(g=> d.rosters[g].forEach(s=> movers.push({...s, grade:g})));
+    movers.sort((a,b)=> b.formativeDelta - a.formativeDelta);
+    const topMoversVM = [...movers.slice(0,2), ...movers.slice(-2)].map(m=>({
+      initials: initials(m.name), name:m.name, grade:m.grade,
+      deltaLabel: (m.formativeDelta>=0?'+':'')+m.formativeDelta+'%',
+      deltaColor: m.formativeDelta>=0?'oklch(55% 0.13 155)':'oklch(56% 0.17 20)'
+    }));
+
+    const selPeriodOptionsVM = d.selPeriods.map((p,i)=>({ value:String(i), label:p.ay+' · '+p.month, selected: i===st.selPeriodIdx }));
+    const activePeriod = d.selPeriods[st.selPeriodIdx] || d.selPeriods[0];
+    const selPeriodLabel = activePeriod.ay + ' · ' + activePeriod.month;
+    const selRowsVM = activePeriod.sel.map(s=>({
+      param:s.param,
+      obsThriveStyle:`width:${s.obsThrive}%;background:oklch(60% 0.12 155)`,
+      obsResistStyle:`width:${s.obsResist}%;background:oklch(56% 0.17 20)`,
+      selfThriveStyle:`width:${s.selfThrive}%;background:oklch(60% 0.12 155)`,
+      selfResistStyle:`width:${s.selfResist}%;background:oklch(56% 0.17 20)`
+    }));
+    const selPeriodSelectStyle = 'padding:6px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);font-size:12px;font-weight:600;background:#fff;color:oklch(30% 0.01 250)';
+
+    const attendanceChartCaption = isAllGrade ? 'All-grades average.' : `Grade ${grade} vs. all-grades average.`;
+    const attendanceMonthsVM = att.map((m,mi)=>({
+      month:m.month, pctLabel:m.pct+'%', overallPctLabel: overallByMonth[mi]+'%',
+      barStyle:`height:${Math.max(4,Math.round(m.pct/100*120))}px;background:${m.pct<85?'oklch(56% 0.17 20)':'oklch(52% 0.1 235)'}`,
+      overallBarStyle:`height:${Math.max(4,Math.round(overallByMonth[mi]/100*120))}px;background:oklch(75% 0.03 235)`
+    }));
+    const absenceFlagsVM = hasRoster
+      ? roster.filter(s=>s.consecAbsent>=7).map(s=>({ name:s.name, days:s.consecAbsent, onAction:()=> this.showToast('Caregiver notified for '+s.name+'.'), actionLabel:'Notify caregiver' }))
+      : (isAllGrade ? [] : [0,1].map(i=>({ name:'Sample Student '+(i+1), days:7+i, onAction:()=> this.showToast('Caregiver notified (sample).'), actionLabel:'Notify caregiver' })));
+    const noRosterNote = !hasRoster;
+
+    const pctOf = (a)=>{
+      let total=0, totalMax=0;
+      Object.keys(a.scores||{}).forEach(sid=> a.competencies.forEach(c=>{
+        const v = a.scores[sid][c.name];
+        if (v!==undefined && v!==null && v!=='') { total += Number(v); totalMax += c.maxMarks; }
+      }));
+      return totalMax ? Math.round(total/totalMax*100) : 0;
+    };
+    const studentAssessmentPct = (a, sid)=>{
+      if (!a) return null;
+      let t=0, tm=0;
+      a.competencies.forEach(c=>{ const v=(a.scores[sid]||{})[c.name]; if (v!==undefined && v!==null && v!=='') { t+=Number(v); tm+=c.maxMarks; } });
+      return tm ? Math.round(t/tm*100) : null;
+    };
+
+    const fList = d.formativeAssessments[grade] || [];
+    const selectedFormative = st.formativeFilterId ? fList.find(a=>a.id===st.formativeFilterId) : fList[fList.length-1];
+    const buildLatestFor = (list, assessment, kind)=>{
+      if (!assessment) return null;
+      const avgPct = pctOf(assessment);
+      const idx = list.findIndex(a=>a.id===assessment.id);
+      const prev = idx>0 ? list[idx-1] : null;
+      let deltaLabel = '—', deltaColor = 'oklch(52% 0.02 250)';
+      if (prev){
+        const delta = avgPct - pctOf(prev);
+        deltaLabel = (delta>=0?'+':'')+delta+'% vs. '+prev.roundLabel;
+        deltaColor = delta>=0 ? 'oklch(55% 0.13 155)' : 'oklch(56% 0.17 20)';
+      }
+      return { subject: assessment.subject, date: assessment.date, roundLabel: assessment.roundLabel, avgLabel: avgPct+'%', deltaLabel, deltaColor,
+        onEnter: ()=> this.setState({modal:{type: kind==='summativeAssessments'?'score-entry-summative':'score-entry-formative', assessmentId: assessment.id}}) };
+    };
+    const latestFormative = buildLatestFor(fList, selectedFormative, 'formativeAssessments');
+    const hasFormativeHistory = fList.length>1;
+    const formativeFilterOptionsVM = [
+      { value:'latest', label:'Latest'+(fList.length?' ('+fList[fList.length-1].roundLabel+')':''), selected: !st.formativeFilterId },
+      ...fList.slice(0,-1).reverse().map(a=>({ value:a.id, label:a.roundLabel, selected: st.formativeFilterId===a.id }))
+    ];
+    const onFormativeFilterChange = (e)=> this.setFormativeFilter(e.target.value);
+
+    const sList = d.summativeAssessments[grade] || [];
+    const latestSummative = buildLatestFor(sList, sList[sList.length-1], 'summativeAssessments');
+
+    const maxCov = 100;
+    const formativeCoverageVM = coverage.map(m=>({ month:m.month, pctLabel:m.pct+'%', barStyle:`height:${Math.max(6,m.pct/maxCov*120)}px;background:oklch(52% 0.1 235)` }));
+    const sc = isAllGrade ? overallSummative : (d.summativeCoverage[grade] || {pre:0,post:0});
+    const summativePreLabel = sc.pre+'%', summativePostLabel = sc.post+'%';
+    const preCoverageStyle = `height:${sc.pre/100*100}px;background:oklch(60% 0.03 235)`;
+    const postCoverageStyle = `height:${sc.post/100*100}px;background:oklch(52% 0.1 235)`;
+    const latestFormativeObjectivesLabel = selectedFormative ? (selectedFormative.subject+' · '+selectedFormative.roundLabel) : '—';
+    const latestFormativeObjectivesVM = selectedFormative ? selectedFormative.competencies.map(c=>{
+      const vals = Object.values(selectedFormative.scores||{}).map(sc=>sc[c.name]).filter(v=>v!==undefined && v!==null && v!=='').map(Number);
+      const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : null;
+      return { text:c.name, maxMarks:c.maxMarks, avgLabel: avg!==null ? avg.toFixed(1)+' / '+c.maxMarks : '—' };
+    }) : [];
+    const hasLatestFormativeObjectives = latestFormativeObjectivesVM.length>0, noLatestFormativeObjectives = !hasLatestFormativeObjectives;
+
+    const bracketColors = ['oklch(56% 0.17 20)','oklch(70% 0.13 55)','oklch(75% 0.09 155)','oklch(58% 0.12 155)'];
+    const bracketBySubjectVM = d.subjects.map(s=>({
+      subject:s,
+      segments: d.bracketBySubject[s].map((v,i)=>({ style:`height:${v}%;background:${bracketColors[i]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700`, label:v+'%', showLabel: v>=10 }))
+    }));
+    const formativeBracketBySubjectVM = d.subjects.map(s=>({
+      subject:s,
+      segments: d.formativeBracketBySubject[s].map((v,i)=>({ style:`height:${v}%;background:${bracketColors[i]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700`, label:v+'%', showLabel: v>=10 }))
+    }));
+    const bracketLegend = d.brackets.map((b,i)=>({ label:b, swatch:`display:inline-block;width:8px;height:8px;background:${bracketColors[i]};border-radius:2px;margin-right:5px` }));
+
+    const gradeAvgPct = (assessmentsByGrade)=> d.rosterGrades.map(g=>{
+      const list = assessmentsByGrade[g] || [];
+      const vals = list.map(pctOf);
+      return { grade:g, avgPct: vals.length ? Math.round(vals.reduce((a,b)=>a+b,0)/vals.length) : 0 };
+    });
+    const makeGradeCompareVM = (rows)=> rows.map(r=>({
+      grade:r.grade, pctLabel:r.avgPct+'%',
+      barStyle:`height:${Math.max(4,Math.round(r.avgPct/100*120))}px;background:oklch(52% 0.1 235)`
+    }));
+    const formativeGradeCompareVM = makeGradeCompareVM(gradeAvgPct(d.formativeAssessments));
+    const summativeGradeCompareVM = makeGradeCompareVM(gradeAvgPct(d.summativeAssessments));
+
+    const sjtSituationsVM = d.sjtSituations.map(s=>({
+      label:s.label,
+      segments: s.options.map((v,i)=>({ style:`width:${v}%;background:${bracketColors[i]};display:flex;align-items:center;justify-content:center;color:#fff;font-size:9.5px;font-weight:700`, label:v+'%', showLabel: v>=12 })),
+    }));
+    const sjtOptionLegend = ['Option A','Option B','Option C','Option D'].map((l,i)=>({ label:l, swatch:`display:inline-block;width:8px;height:8px;background:${bracketColors[i]};border-radius:2px;margin-right:5px` }));
+    const sjtCompetencyVM = d.sjtCompetencyScores.map(c=>({
+      competency:c.competency, scoreLabel:c.score+'%',
+      barStyle:`height:${Math.max(4,Math.round(c.score/100*120))}px;background:oklch(52% 0.12 300)`
+    }));
+    const sjtCoverageStyle = `width:${d.sjtCoveragePct}%;height:100%;background:${d.sjtCoveragePct<70?'oklch(70% 0.13 55)':'oklch(58% 0.12 155)'}`;
+    const sjtCoveragePctLabel = d.sjtCoveragePct+'%';
+
+    // growth
+    const yearScale = st.growthYear==='prev' ? 0.7 : 1;
+    const yearOffset = st.growthYear==='prev' ? -5 : 0;
+    let growthRows = hasRoster ? roster.map(s=>({...s})) : [];
+    const sortMap = {roll:'rollNo', name:'name', formative:'formativeDelta', summative:'summativeDelta'};
+    if (hasRoster){
+      const key = sortMap[st.sortKey] || 'rollNo';
+      growthRows.sort((a,b)=> st.sortDir==='desc' ? (b[key]>a[key]?1:-1) : (a[key]>b[key]?1:-1));
+    }
+    const boyAssessment = sList[0];
+    const growthFList = fList;
+    const comparedLabel = growthFList.length>=2 ? growthFList[growthFList.length-2].roundLabel+' → '+growthFList[growthFList.length-1].roundLabel : (growthFList.length===1 ? growthFList[0].roundLabel+' (baseline)' : '—');
+    const growthRowsVM = growthRows.map(s=>{
+      const fd = Math.round(s.formativeDelta*yearScale);
+      const attPct = Math.max(0, Math.min(100, Math.round((s.monthlyPct.reduce((a,b)=>a+b,0)/s.monthlyPct.length) + yearOffset)));
+      const boy = studentAssessmentPct(boyAssessment, s.id);
+      return {
+        rollNo:s.rollNo, gradeLabel:s.gradeLabel, name:s.name, gender:s.gender,
+        attendanceLabel: attPct+'%',
+        boyLabel: boy!==null ? (Math.max(0,boy+yearOffset))+'%' : '—',
+        formativeLabel:(fd>=0?'+':'')+fd+'%', formativeColor: fd>=0?'oklch(55% 0.13 155)':'oklch(56% 0.17 20)',
+        comparedLabel
+      };
+    });
+    const sortHdr = (key)=> `text-align:left;background:none;border:none;padding:0;font:inherit;cursor:pointer;color:${st.sortKey===key?'oklch(30% 0.01 250)':'oklch(48% 0.02 250)'}`;
+    const sortHeaderStyles = { roll: sortHdr('roll'), name: sortHdr('name'), formative: sortHdr('formative'), summative: sortHdr('summative') };
+    const growthColsStyle = 'grid-template-columns:50px 56px 1.3fr .6fr .9fr 1fr 1fr 1.3fr';
+    const growthYearOptionsVM = [
+      { value:'current', label:'AY 2026–27 (current)', selected: st.growthYear==='current' },
+      { value:'prev', label:'AY 2025–26', selected: st.growthYear==='prev' }
+    ];
+    const growthYearNote = st.growthYear==='prev' ? 'Showing historical data for AY 2025–26.' : '';
+
+    const alphabetical = (list)=> [...list].sort((a,b)=> a.name.localeCompare(b.name));
+    const attendanceRosterVM = hasRoster ? alphabetical(roster).map(s=>({
+      rollNo:s.rollNo, gradeLabel:s.gradeLabel, name:s.name,
+      toggleLabel: s.present?'Present':'Absent',
+      toggleStyle:`padding:6px 12px;border-radius:7px;border:1px solid ${s.present?'oklch(80% 0.09 155)':'oklch(85% 0.09 20)'};background:${s.present?'oklch(95% 0.05 155)':'oklch(95% 0.045 20)'};color:${s.present?'oklch(35% 0.09 155)':'oklch(45% 0.13 20)'};font-size:12px;font-weight:700;cursor:pointer`,
+      onToggle: ()=> this.toggleAttendance(s.id)
+    })) : [];
+
+    const monthHeaderLabels = d.months.map(m=>({label:m}));
+    const studentsTableColsStyle = 'grid-template-columns:50px 1.2fr 70px repeat(6,54px) 70px';
+    const studentsTableVM = hasRoster ? alphabetical(roster).map(s=>({
+      rollNo:s.rollNo, name:s.name, gender:s.gender,
+      monthCells: s.monthlyPct.map(p=>({ label:p+'%', color: p<80?'oklch(56% 0.17 20)':'oklch(40% 0.02 250)' })),
+      onEdit: ()=> this.openEditStudent(s.id)
+    })) : [];
+
+    // modal state
+    const modal = st.modal;
+    const isConfigureModal = !!modal && (modal.type==='configure-formative' || modal.type==='configure-summative');
+    const isConfigureSummativeModal = !!modal && modal.type==='configure-summative';
+    const isConfigureFormativeModal = !!modal && modal.type==='configure-formative';
+    const isScoreEntryModal = !!modal && (modal.type==='score-entry-formative' || modal.type==='score-entry-summative');
+    const isAttendanceModal = !!modal && modal.type==='attendance-entry';
+    const isSelModal = !!modal && modal.type==='sel-entry';
+    const isEnrollModal = !!modal && modal.type==='enroll-student';
+    const isEditStudentModal = !!modal && modal.type==='edit-student';
+    const isStudentFormModal = isEnrollModal || isEditStudentModal;
+    const modalMaxWidth = isScoreEntryModal ? '860px' : (isStudentFormModal ? '640px' : '560px');
+    let modalTitle = '', modalSubtitle = '';
+    let scoreEntryRosterVM = [], competencyColumnsVM = [], scoreEntryColsStyle = '';
+    this._scoreDraft = this._scoreDraft || {};
+    if (isConfigureModal) modalTitle = modal.type==='configure-summative' ? 'Configure summative assessment' : 'Configure formative assessment';
+    if (isAttendanceModal) modalTitle = 'Take attendance — Grade '+gradeDisplay;
+    if (isSelModal) modalTitle = 'Log SEL observation — Grade '+gradeDisplay;
+    if (isEnrollModal) modalTitle = 'Enroll new student — Grade '+gradeDisplay;
+    if (isEditStudentModal) modalTitle = 'Edit student info';
+    if (isScoreEntryModal){
+      const kind = modal.type==='score-entry-summative' ? 'summativeAssessments' : 'formativeAssessments';
+      const list = d[kind][grade] || [];
+      const a = list.find(x=>x.id===modal.assessmentId);
+      if (a){
+        modalTitle = 'Enter scores — '+a.subject;
+        modalSubtitle = a.date+' · '+a.roundLabel;
+        scoreEntryColsStyle = `grid-template-columns:56px 50px 1.4fr repeat(${a.competencies.length},110px)`;
+        const catCounts = {};
+        competencyColumnsVM = a.competencies.map((c,ci)=>{
+          const prefix = c.category==='oral' ? 'O-' : c.category==='written' ? 'W-' : '';
+          const key = c.category || 'q';
+          catCounts[key] = (catCounts[key]||0)+1;
+          return {
+            label: prefix+'Q'+catCounts[key], maxMarks: c.maxMarks, fullText: c.name+' (out of '+c.maxMarks+')',
+            isHovered: st.hoveredScoreCol===ci,
+            onEnter: ()=> this.setState({hoveredScoreCol:ci}),
+            onLeave: ()=> this.setState({hoveredScoreCol:null})
+          };
+        });
+        scoreEntryRosterVM = alphabetical(hasRoster ? roster : []).map(s=>({
+          rollNo:s.rollNo, gradeLabel:s.gradeLabel, name:s.name,
+          cells: a.competencies.map(c=>({
+            max:c.maxMarks, placeholder:'',
+            value: (this._scoreDraft[s.id]||{})[c.name] ?? ((a.scores[s.id]||{})[c.name] ?? ''),
+            onChange: (e)=> this.setScoreDraft(s.id, c.name, e.target.value)
+          }))
+        }));
+      }
+    }
+
+    const draft = st.draft || {};
+    const subjectOptionsVM = d.subjects.map(s=>({ value:s, label:s, selected: draft.subject===s }));
+    const buildObjectiveRows = (field, cap)=> (draft[field]||[]).map((o,idx)=>({
+      text:o.text, maxMarks:o.maxMarks,
+      onChangeText: (e)=> this.setObjectiveText(field, idx, e.target.value),
+      onInc: ()=> this.bumpObjectiveMax(field, idx,1),
+      onDec: ()=> this.bumpObjectiveMax(field, idx,-1),
+      onRemove: ()=> this.removeObjectiveRow(field, idx),
+      canAdd: (draft[field]||[]).length < cap
+    }));
+    const objectiveRowsVM = buildObjectiveRows('objectives', 3);
+    const canAddObjective = (draft.objectives||[]).length < 3;
+    const oralObjectiveRowsVM = buildObjectiveRows('oralObjectives', 3);
+    const canAddOralObjective = (draft.oralObjectives||[]).length < 3;
+    const writtenObjectiveRowsVM = buildObjectiveRows('writtenObjectives', 9);
+    const canAddWrittenObjective = (draft.writtenObjectives||[]).length < 9;
+    const addOralObjective = ()=> this.addObjectiveRow('oralObjectives', 3);
+    const addWrittenObjective = ()=> this.addObjectiveRow('writtenObjectives', 9);
+    const draftStudent = st.draftStudent || {};
+    const yesNoOpts = (field, dflt)=> ['Yes','No'].map(v=>({value:v, label:v, selected:(draftStudent[field]||dflt)===v}));
+    const socialCategoryOptionsVM = ['General','OBC','SC','ST','EWS'].map(v=>({value:v,label:v,selected:(draftStudent.socialCategory||'General')===v}));
+    const minorityGroupOptionsVM = ['None','Muslim','Christian','Sikh','Buddhist','Other'].map(v=>({value:v,label:v,selected:(draftStudent.minorityGroup||'None')===v}));
+    const bplOptionsVM = yesNoOpts('bpl','No');
+    const cwsnOptionsVM = yesNoOpts('cwsn','No');
+    const repeaterOptionsVM = yesNoOpts('repeater','No');
+    const showImpairmentField = draftStudent.cwsn === 'Yes';
+    const sectionOptionsVM = ['A','B','C','D','E','F','G','H','I'].map(v=>({value:v,label:v,selected:draftStudent.section===v}));
+    const curYear = 2026, curAyLabel = (y)=> `AY ${y}–${String((y+1)%100).padStart(2,'0')}`;
+    const gradeHistoryYears = [curYear, curYear-1, curYear-2];
+    const gradeLevels = ['LKG','UKG','1','2','3','4','5','6','7','8','9','10'];
+    const gradeHistoryRowsVM = gradeHistoryYears.map(y=>{
+      const val = (draftStudent.gradeHistory||{})[y] || '';
+      return {
+        year: curAyLabel(y),
+        onChange: (e)=> this.setGradeHistory(y, e.target.value),
+        gradeOptionsVM: [{value:'',label:'—',selected:!val}, ...gradeLevels.map(g=>({value:g,label:g,selected:val===g}))]
+      };
+    });
+    const setDob = (e)=> this.setDraftStudent('dob', e.target.value);
+    const setSection = (e)=> this.setDraftStudent('section', e.target.value);
+    const setFatherName = (e)=> this.setDraftStudent('fatherName', e.target.value);
+    const setMotherName = (e)=> this.setDraftStudent('motherName', e.target.value);
+    const setSocialCategory = (e)=> this.setDraftStudent('socialCategory', e.target.value);
+    const setMinorityGroup = (e)=> this.setDraftStudent('minorityGroup', e.target.value);
+    const setBpl = (e)=> this.setDraftStudent('bpl', e.target.value);
+    const setCwsn = (e)=> this.setDraftStudent('cwsn', e.target.value);
+    const setImpairmentType = (e)=> this.setDraftStudent('impairmentType', e.target.value);
+    const setRepeater = (e)=> this.setDraftStudent('repeater', e.target.value);
+    const setPen = (e)=> this.setDraftStudent('pen', e.target.value);
+    const setAadhaar = (e)=> this.setDraftStudent('aadhaar', e.target.value);
+    const setApaarId = (e)=> this.setDraftStudent('apaarId', e.target.value);
+    const setMobile = (e)=> this.setDraftStudent('mobile', e.target.value);
+    const setAddress = (e)=> this.setDraftStudent('address', e.target.value);
+    const stepperBtnStyle = 'width:24px;height:24px;border-radius:6px;border:1px solid oklch(88% 0.006 250);background:#fff;font-size:14px;font-weight:700;cursor:pointer;line-height:1';
+    const formFieldStyle = 'display:block;width:100%;margin-top:5px;padding:8px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);font-size:13px;font-weight:500;color:oklch(20% 0.012 250)';
+    const primaryBtnStyle = 'padding:9px 16px;border-radius:9px;border:none;background:oklch(78% 0.17 90);color:oklch(22% 0.03 90);font-size:12.5px;font-weight:700;cursor:pointer';
+    const secondaryBtnStyle = 'margin-top:12px;padding:8px 14px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;color:oklch(45% 0.09 235);font-size:12px;font-weight:700;cursor:pointer';
+    const secondaryTightBtnStyle = 'padding:7px 12px;border-radius:8px;border:1px solid oklch(90% 0.006 250);background:#fff;color:oklch(45% 0.09 235);font-size:12px;font-weight:700;cursor:pointer';
+    const tableActionBtnStyle = 'padding:6px 10px;border-radius:7px;border:1px solid oklch(90% 0.006 250);background:#fff;color:oklch(45% 0.09 235);font-size:11.5px;font-weight:700;cursor:pointer';
+    const tableDeleteBtnStyle = 'padding:6px 10px;border-radius:7px;border:1px solid oklch(88% 0.05 20);background:#fff;color:oklch(50% 0.15 20);font-size:11.5px;font-weight:700;cursor:pointer';
+
+    const recentFormativeVM = [...(d.formativeAssessments[grade]||[])].reverse().map(a=>({
+      date:a.date, subject:a.subject, avgLabel: pctOf(a)+'%',
+      onEdit: ()=> this.setState({modal:{type:'score-entry-formative', assessmentId:a.id}}),
+      onDelete: ()=> this.deleteAssessment('formativeAssessments', a.id)
+    }));
+    const hasRecentFormative = recentFormativeVM.length>0, noRecentFormative = !hasRecentFormative;
+    const recentSummativeVM = [...(d.summativeAssessments[grade]||[])].reverse().map(a=>({
+      date:a.date, subject:a.subject, avgLabel: pctOf(a)+'%',
+      onEdit: ()=> this.setState({modal:{type:'score-entry-summative', assessmentId:a.id}}),
+      onDelete: ()=> this.deleteAssessment('summativeAssessments', a.id)
+    }));
+    const hasRecentSummative = recentSummativeVM.length>0, noRecentSummative = !hasRecentSummative;
+    const recentAttendanceVM = [...(st.attendanceLogs[grade]||[])].reverse().map(l=>({
+      date:l.date, summary: l.present+' / '+l.total+' present',
+      onEdit: ()=> this.setState({modal:{type:'attendance-entry'}, attendanceDate:l.date}),
+      onDelete: ()=> this.deleteAttendanceLog(l.id)
+    }));
+    const hasRecentAttendance = recentAttendanceVM.length>0, noRecentAttendance = !hasRecentAttendance;
+    const recentSelVM = [...(st.selLogs[grade]||[])].reverse().map(l=>({
+      date:l.date, label:'SEL observation',
+      onEdit: ()=> this.setState({modal:{type:'sel-entry'}}),
+      onDelete: ()=> this.deleteSelLog(l.id)
+    }));
+    const hasRecentSel = recentSelVM.length>0, noRecentSel = !hasRecentSel;
+
+    return {
+      roleTeacherBtnStyle: roleBtn(st.role==='teacher'), roleLeadBtnStyle: roleBtn(st.role==='lead'),
+      setRoleTeacher: ()=> this.setRole('teacher'), setRoleLead: ()=> this.setRole('lead'),
+      gradesVM, navItemsVM, grade, gradeDisplay, isAllGrade, notAllGrade,
+      liveLabel: 'Live · updated just now', refreshData: ()=> this.refreshData(),
+      toast: st.toast,
+      isOverview: st.tab==='overview', isFormative: st.tab==='formative', isSummative: st.tab==='summative',
+      isSel: st.tab==='sel', isAttendance: st.tab==='attendance', isGrowth: st.tab==='growth',
+      isTeacherRole: st.role==='teacher', isLeadRole: st.role==='lead',
+      thresholdAlert, statCards, actionQueueVM, openActionCount: d.actionQueue.filter(a=>a.status==='open').length,
+      orgKpiCards, bracketMovementRowStyle, bracketMovementVM, topMoversVM, goGrowth: ()=> this.setTab('growth'),
+      selRowsVM, selPeriodOptionsVM, selPeriodLabel, selPeriodSelectStyle,
+      onSelPeriodChange: (e)=> this.setSelPeriod(e.target.value),
+      pctAxisTicks, pctAxisLinesVM, pctAxisLines100VM, pctAxisLines130VM,
+      attendanceChartCaption, attendanceMonthsVM, showGradeCompare, hasRoster, noRosterNote, noRosterMessage,
+      absenceFlagsVM, noAbsenceFlags: hasRoster && absenceFlagsVM.length===0,
+      formativeCoverageVM, latestFormative, noFormative: !latestFormative, hasFormativeHistory, formativeFilterOptionsVM, onFormativeFilterChange,
+      summativePreLabel, summativePostLabel, preCoverageStyle, postCoverageStyle, latestSummative, noSummative: !latestSummative,
+      latestFormativeObjectivesLabel, latestFormativeObjectivesVM, hasLatestFormativeObjectives, noLatestFormativeObjectives,
+      bracketBySubjectVM, bracketLegend, formativeBracketBySubjectVM,
+      formativeGradeCompareVM, summativeGradeCompareVM,
+      sjtSituationsVM, sjtOptionLegend, sjtCompetencyVM, sjtCoverageStyle, sjtCoveragePctLabel,
+      growthRowsVM, growthColsStyle, growthYearOptionsVM, growthYearNote, onGrowthYearChange: (e)=> this.setGrowthYear(e.target.value),
+      sortHeaderStyles, setSortRoll: ()=> this.setSort('roll'), setSortName: ()=> this.setSort('name'), setSortFormative: ()=> this.setSort('formative'), setSortSummative: ()=> this.setSort('summative'),
+      attendanceRosterVM, submitAttendance: ()=> this.submitAttendance(),
+      attendanceDate: st.attendanceDate, setAttendanceDate: (e)=> this.setAttendanceDate(e.target.value),
+      markAllPresent: ()=> this.markAllAttendance(true), markAllAbsent: ()=> this.markAllAttendance(false),
+      secondaryTightBtnStyle,
+      monthHeaderLabels, studentsTableColsStyle, studentsTableVM,
+      openEnrollStudent: ()=> this.openEnrollStudent(),
+
+      primaryBtnStyle, secondaryBtnStyle, formFieldStyle,
+      openConfigureFormative: ()=> this.openModal('configure-formative'),
+      openConfigureSummative: ()=> this.openModal('configure-summative'),
+      openAttendanceEntry: ()=> this.setState({modal:{type:'attendance-entry'}}),
+      openSelEntry: ()=> this.setState({modal:{type:'sel-entry'}}),
+      goToOverview: ()=> this.setState({tab:'overview'}),
+      selFormMenuOpen: !!st.selFormMenuOpen,
+      toggleSelFormMenu: ()=> this.setState(s=>({selFormMenuOpen: !s.selFormMenuOpen})),
+      goToSelForm: ()=>{ window.location.href = 'SEL Assessment Form.dc.html'; },
+      modal, modalTitle, modalSubtitle, modalMaxWidth,
+      isConfigureModal, isConfigureSummativeModal, isConfigureFormativeModal, isScoreEntryModal, isAttendanceModal, isSelModal, isStudentFormModal,
+      objectiveRowsVM, canAddObjective, addObjectiveRow: ()=> this.addObjectiveRow('objectives', 3),
+      oralObjectiveRowsVM, canAddOralObjective, addOralObjective,
+      writtenObjectiveRowsVM, canAddWrittenObjective, addWrittenObjective,
+      closeModal: ()=> this.closeModal(),
+      closeModalOnBackdrop: ()=> this.closeModal(),
+      stopClick: (e)=> e.stopPropagation(),
+      draftDate: draft.date||todayISO(),
+      setDraftSubject: (e)=> this.setDraft('subject', e.target.value),
+      setDraftDate: (e)=> this.setDraft('date', e.target.value),
+      subjectOptionsVM, stepperBtnStyle,
+      confirmConfigure: ()=> this.confirmConfigure(),
+      scoreEntryRosterVM, competencyColumnsVM, scoreEntryColsStyle, confirmScoreEntry: ()=> this.confirmScoreEntry(),
+      confirmSelEntry: ()=> this.confirmSelEntry(),
+      draftStudent, setDraftStudentName: (e)=> this.setDraftStudent('name', e.target.value),
+      setDraftStudentGender: (e)=> this.setDraftStudent('gender', e.target.value),
+      draftGenderNone: !draftStudent.gender, draftGenderM: draftStudent.gender==='M', draftGenderF: draftStudent.gender==='F',
+      sectionOptionsVM, gradeHistoryRowsVM,
+      socialCategoryOptionsVM, minorityGroupOptionsVM, bplOptionsVM, cwsnOptionsVM, repeaterOptionsVM, showImpairmentField,
+      setDob, setSection, setFatherName, setMotherName, setSocialCategory, setMinorityGroup, setBpl, setCwsn, setImpairmentType, setRepeater, setPen, setAadhaar, setApaarId, setMobile, setAddress,
+      submitStudentLabel: isEditStudentModal ? 'Save changes' : 'Enroll student',
+      onSubmitStudentForm: isEditStudentModal ? (()=> this.confirmEditStudent()) : (()=> this.confirmEnrollStudent()),
+      tableActionBtnStyle, tableDeleteBtnStyle,
+      recentFormativeVM, hasRecentFormative, noRecentFormative,
+      recentSummativeVM, hasRecentSummative, noRecentSummative,
+      recentAttendanceVM, hasRecentAttendance, noRecentAttendance,
+      recentSelVM, hasRecentSel, noRecentSel
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Inter:wght@400;500;600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  body{margin:0;background:oklch(97.5% 0.004 250);font-family:Inter,system-ui,sans-serif;color:oklch(20% 0.012 250)}
+  * { box-sizing:border-box; }
+  a { color:oklch(45% 0.1 235); }
+  a:hover { color:oklch(35% 0.1 235); }
+  ::-webkit-scrollbar{width:8px;height:8px}
+  ::-webkit-scrollbar-thumb{background:oklch(85% 0.006 250);border-radius:4px}
+  .hi { font-family:'Noto Sans Devanagari',Inter,sans-serif; }
+</style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;flex-direction:column;background:oklch(97.5% 0.004 250)">
+
+  <!-- TOP BAR -->
+  <div style="display:flex;align-items:center;gap:16px;padding:14px 24px;background:#fff;border-bottom:1px solid oklch(90% 0.006 250);flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:10px;font-family:Manrope,sans-serif;font-weight:800;font-size:18px;letter-spacing:-.01em;cursor:pointer" onclick="{{ goToDashboard }}">
+      <img src="uploads/apni-shala-logo-cc-01.png" alt="Apnishala logo" style="width:38px;height:32px;border-radius:6px;object-fit:cover;flex:none">
+      {{ toolTitle }}
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:14px">
+      <sc-if value="{{ isNonObservationMode }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;background:oklch(94% 0.006 250);border-radius:10px;padding:3px;gap:2px">
+          <button style="{{ langEnBtnStyle }}" onclick="{{ setLangEn }}">EN</button>
+          <button style="{{ langHiBtnStyle }}" onclick="{{ setLangHi }}">हिं</button>
+        </div>
+      </sc-if>
+      <div style="font-size:12px;color:oklch(52% 0.02 250)">{{ topBarNote }}</div>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ null }}">
+    <div style="position:fixed;bottom:24px;right:28px;background:oklch(22% 0.01 250);color:#fff;padding:11px 16px;border-radius:10px;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:50">{{ toast }}</div>
+  </sc-if>
+
+  <!-- SETUP -->
+  <sc-if value="{{ isSetup }}" hint-placeholder-val="{{ true }}">
+    <div style="flex:1;display:flex;align-items:center;justify-content:center;padding:40px 20px">
+      <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:16px;padding:28px;max-width:420px;width:100%">
+        <h1 style="font-family:Manrope,sans-serif;font-size:18px;margin:0 0 4px">Start SEL entry</h1>
+        <p style="margin:0 0 20px;font-size:13px;color:oklch(52% 0.02 250)">Pick assessment, grade, and cycle. These stay fixed for the session.</p>
+
+        <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250);margin-bottom:6px">Grade</label>
+        <select style="width:100%;padding:10px 12px;border-radius:9px;border:1px solid oklch(88% 0.006 250);font-size:14px;font-weight:600;margin-bottom:18px" value="{{ grade }}" onChange="{{ onGradePick }}">
+          <sc-for list="{{ allGradesVM }}" as="g" hint-placeholder-count="12">
+            <option value="{{ g }}">{{ g }}</option>
+          </sc-for>
+        </select>
+
+        <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250);margin-bottom:6px">Assessment</label>
+        <div style="display:flex;background:oklch(94% 0.006 250);border-radius:10px;padding:3px;gap:2px;margin-bottom:6px;flex-wrap:wrap">
+          <button style="{{ modeObservationBtnStyle }}" onclick="{{ setModeObservation }}">Observation</button>
+          <button style="{{ modeSjtBtnStyle }}" onclick="{{ setModeSjt }}" disabled="{{ srModesDisabled }}">SJT</button>
+          <button style="{{ modeResponseBtnStyle }}" onclick="{{ setModeResponse }}" disabled="{{ srModesDisabled }}">Student Response</button>
+        </div>
+        <p style="{{ srHintStyle }}">SJT and Student Response are only available for Grades 6–10.</p>
+
+        <label style="display:block;font-size:11px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250);margin-bottom:6px">Cycle</label>
+        <div style="display:flex;background:oklch(94% 0.006 250);border-radius:10px;padding:3px;gap:2px;margin-bottom:22px">
+          <button style="{{ preBtnStyle }}" onclick="{{ setPre }}">Pre</button>
+          <button style="{{ postBtnStyle }}" onclick="{{ setPost }}">Post</button>
+        </div>
+
+        <button style="width:100%;padding:12px;border-radius:10px;border:none;background:oklch(45% 0.1 235);color:#fff;font-size:14px;font-weight:700;cursor:pointer" onclick="{{ startEntry }}">Start entry — {{ studentCountForGrade }} students</button>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ENTRY -->
+  <sc-if value="{{ isEntry }}" hint-placeholder-val="{{ false }}">
+    <div style="position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid oklch(90% 0.006 250);padding:14px 24px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 2px 8px rgba(0,0,0,.03)">
+
+      <div style="display:flex;align-items:center;gap:8px">
+        <div style="padding:8px 12px;border-radius:9px;background:oklch(94% 0.03 235);color:oklch(35% 0.11 235);font-size:12.5px;font-weight:700;white-space:nowrap">{{ grade }} · {{ cycle }}</div>
+        <button style="border:none;background:none;color:oklch(45% 0.1 235);font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;white-space:nowrap" onclick="{{ changeSetup }}">Change</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250)">Student</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          <button style="width:30px;height:30px;border-radius:8px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(40% 0.02 250);font-weight:700;cursor:pointer" onclick="{{ prevStudent }}">←</button>
+          <select style="font-family:Inter,sans-serif;font-size:13.5px;font-weight:600;padding:6px 10px;border-radius:8px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(20% 0.012 250);min-width:170px" value="{{ studentIndex }}" onChange="{{ onStudentSelect }}">
+            <sc-for list="{{ studentOptionsVM }}" as="opt" hint-placeholder-count="6">
+              <option value="{{ opt.value }}">{{ opt.label }}</option>
+            </sc-for>
+          </select>
+          <button style="width:30px;height:30px;border-radius:8px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(40% 0.02 250);font-weight:700;cursor:pointer" onclick="{{ nextStudent }}">→</button>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:5px;min-width:150px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:oklch(52% 0.02 250)">
+          <span>Progress</span><span style="font-weight:700;color:oklch(20% 0.012 250)">{{ answeredCount }} / {{ totalCount }}</span>
+        </div>
+        <div style="height:7px;background:oklch(93% 0.006 250);border-radius:4px;overflow:hidden;width:150px">
+          <div style="{{ progressBarStyle }}"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:oklch(58% 0.02 250)">Session</span>
+        <span style="font-size:12.5px;font-weight:600;white-space:nowrap">{{ studentsEnteredCount }} / {{ studentsInGradeCount }} students started</span>
+      </div>
+
+      <sc-if value="{{ isResponseMode }}" hint-placeholder-val="{{ false }}">
+        <div style="font-size:11.5px;color:oklch(52% 0.02 250);white-space:nowrap">1 = Not like me · 4 = Very much like me</div>
+      </sc-if>
+
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button style="padding:9px 14px;border-radius:9px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(45% 0.02 250);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="{{ clearStudent }}">Clear student</button>
+        <button style="padding:9px 16px;border-radius:9px;border:none;background:oklch(45% 0.1 235);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="{{ saveEntry }}">Save entry</button>
+      </div>
+    </div>
+
+    <!-- OBSERVATION ENTRY -->
+    <sc-if value="{{ isObservationMode }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;min-width:0;padding:22px 24px 80px;max-width:880px;width:100%;margin:0 auto">
+        <sc-for list="{{ obsGroupedVM }}" as="grp" hint-placeholder-count="5">
+          <div style="margin-bottom:26px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 2px">
+              <span style="{{ grp.dotStyle }}"></span>
+              <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0;letter-spacing:.01em">{{ grp.name }}</h2>
+              <span style="font-size:11.5px;color:oklch(55% 0.02 250);font-weight:600">{{ grp.answered }} / {{ grp.total }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px 18px;display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap">
+                  <div style="flex:1;min-width:220px">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+                      <span style="font-family:Manrope,sans-serif;font-size:11px;font-weight:800;color:oklch(60% 0.02 250)">{{ it.number }}</span>
+                      <span style="{{ it.badgeStyle }}">{{ grp.name }}</span>
+                    </div>
+                    <div style="font-size:15px;font-weight:700;margin-bottom:4px;line-height:1.3">{{ it.title }}</div>
+                    <sc-if value="{{ it.guidance }}" hint-placeholder-val="{{ null }}">
+                      <div style="font-size:12.5px;line-height:1.5;color:oklch(50% 0.02 250)">{{ it.guidance }}</div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;gap:6px;flex:none;align-self:center">
+                    <sc-for list="{{ it.scoreOptions }}" as="opt" hint-placeholder-count="4">
+                      <button style="{{ opt.style }}" onclick="{{ opt.onClick }}">{{ opt.n }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- SJT ENTRY -->
+    <sc-if value="{{ isSjtMode }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;padding:22px 24px 80px;max-width:820px;width:100%;margin:0 auto">
+        <sc-for list="{{ situationsVM }}" as="sit" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:18px 20px;margin-bottom:14px">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+              <span style="width:26px;height:26px;border-radius:8px;background:oklch(45% 0.1 235);color:#fff;font-family:Manrope,sans-serif;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:none">{{ sit.number }}</span>
+              <span style="font-family:Manrope,sans-serif;font-size:13px;font-weight:700;color:oklch(52% 0.02 250)">Situation {{ sit.number }}</span>
+            </div>
+            <div class="{{ sit.textClass }}" style="font-size:14.5px;line-height:1.55;margin-bottom:14px">{{ sit.story }}</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <sc-for list="{{ sit.options }}" as="opt" hint-placeholder-count="4">
+                <div style="{{ opt.rowStyle }}" onclick="{{ opt.onClick }}">
+                  <span style="{{ opt.letterStyle }}">{{ opt.letter }}</span>
+                  <span class="{{ sit.textClass }}" style="font-size:13.5px;line-height:1.45">{{ opt.text }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <!-- RESPONSE ENTRY -->
+    <sc-if value="{{ isResponseMode }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1;min-width:0;padding:22px 24px 80px;max-width:880px;width:100%;margin:0 auto">
+        <sc-for list="{{ groupedVM }}" as="grp" hint-placeholder-count="5">
+          <div style="margin-bottom:26px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 2px">
+              <span style="{{ grp.dotStyle }}"></span>
+              <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0;letter-spacing:.01em">{{ grp.name }}</h2>
+              <span style="font-size:11.5px;color:oklch(55% 0.02 250);font-weight:600">{{ grp.answered }} / {{ grp.total }}</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px 18px;display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+                  <div style="flex:1;min-width:220px" class="{{ it.textClass }}">
+                    <span style="{{ it.badgeStyle }}">{{ it.code }}</span>
+                    <div style="font-size:14.5px;font-weight:600;margin-top:6px;line-height:1.4">{{ it.text }}</div>
+                  </div>
+                  <div style="display:flex;gap:6px;flex:none">
+                    <sc-for list="{{ it.scoreOptions }}" as="opt" hint-placeholder-count="4">
+                      <button style="{{ opt.style }}" onclick="{{ opt.onClick }}">{{ opt.n }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </sc-if>
+
+  <!-- SUMMARY -->
+  <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+    <div style="flex:1;min-width:0;padding:28px 24px 80px;max-width:880px;width:100%;margin:0 auto">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
+        <div>
+          <h1 style="font-family:Manrope,sans-serif;font-size:20px;margin:0 0 4px">{{ toolTitle }} summary — {{ grade }} · {{ cycle }}</h1>
+          <p style="margin:0;font-size:13px;color:oklch(52% 0.02 250)">{{ summarySubtitle }}</p>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button style="padding:9px 14px;border-radius:9px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(45% 0.02 250);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="{{ goToDashboard }}">Back to dashboard</button>
+          <button style="padding:9px 14px;border-radius:9px;border:1px solid oklch(88% 0.006 250);background:#fff;color:oklch(45% 0.02 250);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="{{ backToEntry }}">Back to entry</button>
+          <button style="padding:9px 16px;border-radius:9px;border:none;background:oklch(45% 0.1 235);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap" onclick="{{ startNewSession }}">Log another</button>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:22px">
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px">
+          <div style="font-size:12px;color:oklch(52% 0.02 250);font-weight:600;margin-bottom:8px">Students entered</div>
+          <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ studentsEnteredCount }} / {{ studentsInGradeCount }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px">
+          <div style="font-size:12px;color:oklch(52% 0.02 250);font-weight:600;margin-bottom:8px">{{ trackedLabel }}</div>
+          <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ totalCount }}</div>
+        </div>
+        <sc-if value="{{ isSjtMode }}" hint-placeholder-val="{{ false }}"></sc-if>
+        <sc-if value="{{ showAvgCard }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px">
+            <div style="font-size:12px;color:oklch(52% 0.02 250);font-weight:600;margin-bottom:8px">Average score (of 4)</div>
+            <div style="font-family:Manrope,sans-serif;font-size:26px;font-weight:800">{{ overallAvgLabel }}</div>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- OBSERVATION / RESPONSE SUMMARY TABLE -->
+      <sc-if value="{{ showDomainSummary }}" hint-placeholder-val="{{ true }}">
+        <sc-for list="{{ summaryGroupedVM }}" as="grp" hint-placeholder-count="5">
+          <div style="margin-bottom:22px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:0 2px">
+              <span style="{{ grp.dotStyle }}"></span>
+              <h2 style="font-family:Manrope,sans-serif;font-size:14.5px;margin:0;letter-spacing:.01em">{{ grp.name }}</h2>
+            </div>
+            <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:6px 18px">
+              <sc-for list="{{ grp.items }}" as="it" hint-placeholder-count="4">
+                <div style="display:flex;align-items:center;gap:14px;padding:11px 0;border-top:1px solid oklch(93% 0.006 250)">
+                  <div style="flex:1;min-width:160px;font-size:13px;font-weight:600">{{ it.title }}</div>
+                  <div style="flex:1;max-width:220px;height:9px;background:oklch(93% 0.006 250);border-radius:4px;overflow:hidden">
+                    <div style="{{ it.barStyle }}"></div>
+                  </div>
+                  <div style="width:44px;text-align:right;font-family:Manrope,sans-serif;font-size:14px;font-weight:800">{{ it.avgLabel }}</div>
+                  <div style="width:56px;text-align:right;font-size:11.5px;color:oklch(55% 0.02 250)">n={{ it.n }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <!-- SJT SUMMARY -->
+      <sc-if value="{{ isSjtMode }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ sjtSummaryVM }}" as="sit" hint-placeholder-count="4">
+          <div style="background:#fff;border:1px solid oklch(90% 0.006 250);border-radius:14px;padding:16px 18px;margin-bottom:12px">
+            <div style="font-size:12.5px;font-weight:700;color:oklch(52% 0.02 250);margin-bottom:10px">Situation {{ sit.number }} · n={{ sit.n }}</div>
+            <sc-for list="{{ sit.options }}" as="opt" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;padding:5px 0">
+                <span style="width:20px;font-size:12.5px;font-weight:800;color:oklch(45% 0.02 250)">{{ opt.letter }}</span>
+                <div style="flex:1;height:9px;background:oklch(93% 0.006 250);border-radius:4px;overflow:hidden">
+                  <div style="{{ opt.barStyle }}"></div>
+                </div>
+                <span style="width:60px;text-align:right;font-size:11.5px;color:oklch(55% 0.02 250)">{{ opt.pctLabel }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </sc-if>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+
+const ITEMS_K3 = [
+  {id:'sa1', domain:'Self Awareness', title:'Identifies emotions for self in present moment', guidance:"Does the student avoid answering questions related to emotions — running away, changing topic? Is the student struggling to describe emotions during story sessions or FGDs? Does the student struggle to use words for big emotions? How often is the student able to express emotions accurately and without much prompting?"},
+  {id:'sa2', domain:'Self Awareness', title:'Goals & hopes', guidance:"Does the student demonstrate any activities that show consistent work towards their goals, like saving up for a course? Does the student answer questions about future plans, or answer with options and some confusion, or often say they don't know?"},
+  {id:'sa3', domain:'Self Awareness', title:'Strengths & areas of improvement', guidance:"Does the student reflect and share about what they were able to do and struggled with, post an activity? Does the student get defensive when pointed out flaws? Does the student shy away and not accept appreciation?"},
+  {id:'sm1', domain:'Self Management', title:'Work towards goals for self', guidance:"Does the student identify what they need to do to be able to achieve a goal for themself?"},
+  {id:'sm2', domain:'Self Management', title:'Direct thoughts & feelings', guidance:"Have you observed any incident where the student is angry or in panic, for example? Do they find ways to actively find solutions to calm themselves? Do they ask for help, or do they ignore, lash out, or resist help when offered?"},
+  {id:'sm3', domain:'Self Management', title:'Prioritise actions', guidance:"During an activity in class, do they manage all the instructions and resources given? Do they plan it and finish on time?"},
+  {id:'so1', domain:'Social Awareness', title:'Impact on others', guidance:"Have you observed them apologising after a conflict? Are they able to give examples of interdependence in their daily life and in the larger society, on a macro level, easily?"},
+  {id:'so2', domain:'Social Awareness', title:"Understand others' feelings", guidance:"Are they able to articulate how others' (like their friends, family, teachers) affect their own feelings, or have they expressed how you as a facilitator impact their feelings?"},
+  {id:'so3', domain:'Social Awareness', title:'Interdependence', guidance:"Can be observed in how they interact with others in the school — e.g. other teachers, social worker, staff — and if they are able to express gratitude for those around them in their ecosystem at school or in the community."},
+  {id:'rs1', domain:'Relationship Skills', title:'Conflict resolution', guidance:"Have you observed them during a conflict, or heard them share about one?"},
+  {id:'rs2', domain:'Relationship Skills', title:'Compassionate & fair', guidance:"Can be observed in circle activities — does the student pass the ball / give a chance to their friends, or try to accommodate those who haven't gotten a chance? How do they share resources if they are leading a group work?"},
+  {id:'rs3', domain:'Relationship Skills', title:'Provide help', guidance:"Can be observed during group work — if they have finished early, do they help out others who are struggling?"},
+  {id:'rd1', domain:'Responsible Decision Making', title:'Consider all', guidance:"\u201cI want to do ____ and for doing it, ____ may be the responsible decision.\u201d"},
+  {id:'rd2', domain:'Responsible Decision Making', title:'Information gathering', guidance:"\u201cI can see that I have more than one option and I have to make a choice.\u201d"},
+  {id:'rd3', domain:'Responsible Decision Making', title:'Alternate thinking & consequences', guidance:"\u201cI ask others questions such as: Why did you do this? What did you think when doing this?\u201d"},
+];
+
+const ITEMS_G4 = [
+  {id:'sa1', domain:'Self Awareness', title:'Emotions', guidance:"Does the student avoid answering questions related to emotions — running away, changing topic? Is the student struggling to describe emotions during story sessions or FGDs? Does the student struggle to use words for big emotions? How often is the student able to express emotions accurately and without much prompting?"},
+  {id:'sa2', domain:'Self Awareness', title:'Values & context of experiences', guidance:"Does the student answer questions related to values logically? Are the answers reflective of nuance, or is it more black and white (e.g. honest = good)? Does the student simply agree to anything said without applying their mind?"},
+  {id:'sa3', domain:'Self Awareness', title:'Goals & hopes', guidance:"Does the student demonstrate any activities that show consistent work towards their goals, like saving up for a course? Does the student answer questions about future plans, or answer with options and some confusion, or often say they don't know?"},
+  {id:'sa4', domain:'Self Awareness', title:'Strengths & areas of improvement', guidance:"Does the student reflect and share about what they were able to do and struggled with, post an activity? Does the student get defensive when pointed out flaws? Does the student shy away and not accept appreciation?"},
+  {id:'sa5', domain:'Self Awareness', title:'Impact on behaviour', guidance:"Incidents to observe: if there has been a conflict in the class and they are asked to reflect and change their action."},
+  {id:'sa6', domain:'Self Awareness', title:'Identities', guidance:"How many identities does the student easily name and share?"},
+  {id:'sm1', domain:'Self Management', title:'Focus on present', guidance:"Does the student focus easily during an activity in class? Has the student shared in a one-on-one conversation about focus-related issues, or has their teacher/parent?"},
+  {id:'sm2', domain:'Self Management', title:'Work towards goals', guidance:null},
+  {id:'sm3', domain:'Self Management', title:'Direct thoughts & feelings', guidance:"Have you observed any incident where the student is angry or in panic, for example? Do they find ways to actively find solutions to calm themselves? Do they ask for help, or do they ignore, lash out, or resist help when offered?"},
+  {id:'sm4', domain:'Self Management', title:'Prioritise actions', guidance:"During an activity in class, do they manage all the instructions and resources given? Do they plan it and finish on time?"},
+  {id:'sm5', domain:'Self Management', title:'Self compassion', guidance:"Observe in situations like: after a conflict, do they remain upset for long and stay disengaged? After receiving low marks, how do they talk about it — do they say they feel bad but will become okay and study better next time? Do they refer to classroom norms to share?"},
+  {id:'sm6', domain:'Self Management', title:'Seek help', guidance:"Observe in situations like: does the student avoid using spaces and norms for rest, even when reminded? Any incident in school where they've come and asked for help, or you see them seek help from peers/teachers."},
+  {id:'so1', domain:'Social Awareness', title:'Impact on others', guidance:"Have you observed them apologising after a conflict? Are they able to give examples of interdependence in their daily life and in the larger society, on a macro level, easily?"},
+  {id:'so2', domain:'Social Awareness', title:"Understand others' feelings", guidance:"Are they able to articulate how others' (like their friends, family, teachers) affect their own feelings, or have they expressed how you as a facilitator impact their feelings?"},
+  {id:'so3', domain:'Social Awareness', title:'Different perspectives', guidance:"Have you observed them during FGD/class activity/debates? How do they respond to comments or discussions that don't align with their thoughts or opinions? Have they shared about conversations with teachers/parents/peers where they had a disagreement but showed understanding or acceptance of others' views?"},
+  {id:'so4', domain:'Social Awareness', title:'Gratitude', guidance:"How do they thank their teachers/peers/you as a facilitator? What do their peers say about them?"},
+  {id:'so5', domain:'Social Awareness', title:'Diverse and unjust norms', guidance:"Do they share about different norms sensitively, and also call out why they are discriminatory (when relevant)? Do they show openness to changing their bias/view after learning about a new cultural practice? Do they mock or judge during sharing sessions?"},
+  {id:'so6', domain:'Social Awareness', title:'Adapt actions', guidance:"How do they make decisions during activities? Note: autistic or neurodivergent children may face difficulty displaying this competency — if you are aware of a diagnosis, or think they need one, note it here and refer to the counsellor."},
+  {id:'so7', domain:'Social Awareness', title:'Structural understanding', guidance:"Have you discussed social issues and their causes in class or one-on-one with them? Have they been able to show an understanding of the structural or systemic nature?"},
+  {id:'so8', domain:'Social Awareness', title:'Interdependence', guidance:null},
+  {id:'rs1', domain:'Relationship Skills', title:'Communicate needs', guidance:"Does the student share that they're struggling to focus, or just run away? Do they ask for what they need during an activity?"},
+  {id:'rs2', domain:'Relationship Skills', title:'Listen', guidance:"Do they interrupt others or you during class? Do they wait for their turn? Do they nod their head and respond in pair work?"},
+  {id:'rs3', domain:'Relationship Skills', title:'Group work', guidance:"Observe them during group work — do they sit away, do they talk over and push their ideas? Do they get upset when the group decides to do something else?"},
+  {id:'rs4', domain:'Relationship Skills', title:'Conflict resolution', guidance:"Have you observed them during a conflict, or heard them share about one?"},
+  {id:'rs5', domain:'Relationship Skills', title:'Trusting relationships', guidance:null},
+  {id:'rs6', domain:'Relationship Skills', title:'Compassionate & fair', guidance:"Can be observed in circle activities — does the student pass the ball / give a chance to their friends, or try to accommodate those who haven't gotten a chance? How do they share resources if they are leading a group work?"},
+  {id:'rs7', domain:'Relationship Skills', title:'Provide help', guidance:"Can be observed during group work — if they have finished early, do they help out others who are struggling?"},
+  {id:'rd1', domain:'Responsible Decision Making', title:'Well being of community', guidance:null},
+  {id:'rd2', domain:'Responsible Decision Making', title:'Consider all', guidance:null},
+  {id:'rd3', domain:'Responsible Decision Making', title:'Information gathering', guidance:null},
+  {id:'rd4', domain:'Responsible Decision Making', title:'Alternate thinking & consequences', guidance:null},
+  {id:'rd5', domain:'Responsible Decision Making', title:'Accept consequences', guidance:null},
+];
+
+const K3_GRADES = ['Jr. KG', 'Sr. KG', 'Grade 1', 'Grade 2', 'Grade 3'];
+const G4_GRADES = ['Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
+const SR_GRADES = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
+const ALL_GRADES = ['Jr. KG', 'Sr. KG', 'Grade 1', 'Grade 2', 'Grade 3', 'Grade 4', 'Grade 5', 'Grade 6', 'Grade 7', 'Grade 8', 'Grade 9', 'Grade 10'];
+
+const ALL_STUDENTS = [
+  {id:'23425847034', name:'Aarav Shinde', grade:'Sr. KG'},
+  {id:'23092143344', name:'Meera Kadam', grade:'Sr. KG'},
+  {id:'23022289417', name:'Ishaan Rane', grade:'Jr. KG'},
+  {id:'23025585562', name:'Zoya Sheikh', grade:'Grade 1'},
+  {id:'23229934803', name:'Rohan Pawar', grade:'Grade 1'},
+  {id:'23040428182', name:'Sana Ansari', grade:'Grade 2'},
+  {id:'23275924665', name:'Devansh Iyer', grade:'Grade 2'},
+  {id:'23124452253', name:'Priya Naik', grade:'Grade 3'},
+  {id:'21999770686', name:'Kabir Mehta', grade:'Grade 4'},
+  {id:'22086292993', name:'Anaya Joshi', grade:'Grade 5'},
+  {id:'22372561923', name:'Vihaan Desai', grade:'Grade 6'},
+  {id:'22492560622', name:'Riya Sharma', grade:'Grade 7'},
+  {id:'22253391586', name:'Arjun Fernandes', grade:'Grade 8'},
+  {id:'21989134974', name:'Simran Kaur', grade:'Grade 8'},
+  {id:'22354493361', name:'Yash Kulkarni', grade:'Grade 9'},
+  {id:'22221453255', name:'Naina Bhosale', grade:'Grade 10'},
+];
+
+const SITUATIONS = [
+  { id:'sit1',
+    en:{story:"Peter and Rashida have got into a fight. Peter goes to Tarun and tells him how angry he is at Rashida. What should Tarun do to resolve this issue?",
+      options:["Since Peter came to Tarun first, he should take his side and support him.",
+        "Ask and get to know the issue from both Peter and Rashida. And try to help each other understand what the other person feels, to resolve the issue.",
+        "Ask and get to know the issue from Peter and Rashida. And take the side of the one Tarun feels is right.",
+        "Ask and get to know the issue. Based on this, Tarun should try resolving the issue himself, and also get help from his teachers to better tackle the problem."]},
+    hi:{story:"पीटर और रशीदा में झगड़ा हो गया है। पीटर तरुण के पास जाकर बताता है कि वह रशीदा से कितना नाराज़ है। तरुण को इस मुद्दे को सुलझाने के लिए क्या करना चाहिए?",
+      options:["चूँकि पीटर पहले तरुण के पास आया, इसलिए उसे पीटर का पक्ष लेकर उसका समर्थन करना चाहिए।",
+        "पीटर और रशीदा दोनों से बात करके मुद्दा समझना चाहिए, और एक-दूसरे को यह समझने में मदद करनी चाहिए कि दूसरा व्यक्ति क्या महसूस करता है।",
+        "पीटर और रशीदा से पूछकर मुद्दा जानना चाहिए, और जो तरुण को सही लगे उसका पक्ष लेना चाहिए।",
+        "मुद्दा समझने के बाद तरुण को खुद इसे सुलझाने की कोशिश करनी चाहिए, और बेहतर तरीके से निपटने के लिए शिक्षकों से भी मदद लेनी चाहिए।"]} },
+  { id:'sit2',
+    en:{story:"Preeti has started calling you a nickname that you do not like. You have asked Preeti to stop, but she laughs and tells you that she is just trying to be funny. How would you overcome this situation?",
+      options:["You will shout at Preeti whenever she calls you by that name.",
+        "You will sit and talk with Preeti to let her know how exactly you feel when you are being called names, and ask her to stop.",
+        "You will stop talking to Preeti, and when she calls you by that name again, you reach out to your teacher for help.",
+        "You will stop talking to Preeti and completely ignore her, hoping that she would stop it some day."]},
+    hi:{story:"प्रीति तुम्हें एक ऐसा उपनाम बुलाने लगी है जो तुम्हें पसंद नहीं। तुमने उससे रुकने को कहा, लेकिन वह हँसकर कहती है कि वह मज़ाक कर रही है। तुम इस स्थिति से कैसे निपटोगे?",
+      options:["जब भी वह यह नाम बुलाए, तुम उस पर चिल्लाओगे।",
+        "तुम प्रीति के साथ बैठकर बताओगे कि यह नाम सुनकर तुम्हें कैसा महसूस होता है, और उससे रुकने को कहोगे।",
+        "तुम प्रीति से बात करना बंद कर दोगे, और अगर वह फिर से यह नाम बुलाए तो शिक्षक से मदद माँगोगे।",
+        "तुम प्रीति से बात करना पूरी तरह बंद कर दोगे और उसे नज़रअंदाज़ करोगे, यह सोचकर कि वह किसी दिन रुक जाएगी।"]} },
+  { id:'sit3',
+    en:{story:"One of your friends, Sameer, is being teased by your classmates for his skin colour. What would you do about this?",
+      options:["You feel that Sameer is getting hurt when called names. You will sit and talk to him about it, and comfort him.",
+        "You feel that Sameer is getting hurt. You will go to your classmates and ask them to stop calling him names, and help them understand how he would be feeling.",
+        "You feel that it is not a big thing, as it is very common among friends to call names among each other, so you will not do anything.",
+        "You feel that Sameer is getting hurt. You will sit and talk to him about it to understand how he feels, and ask him if there is anything he would like you to do for him."]},
+    hi:{story:"तुम्हारे दोस्त समीर को क्लास के बच्चे उसके रंग के कारण चिढ़ाते हैं। तुम इस बारे में क्या करोगे?",
+      options:["तुम्हें लगता है कि समीर को दुख हो रहा है। तुम उसके पास बैठकर बात करोगे और उसे दिलासा दोगे।",
+        "तुम्हें लगता है कि समीर को दुख हो रहा है। तुम अपने सहपाठियों के पास जाकर उन्हें रुकने के लिए कहोगे, और समझाओगे कि इससे समीर को कैसा महसूस होता है।",
+        "तुम्हें लगता है कि यह कोई बड़ी बात नहीं, दोस्तों में ऐसा मज़ाक चलता रहता है, इसलिए तुम कुछ नहीं करोगे।",
+        "तुम्हें लगता है कि समीर को दुख हो रहा है। तुम उससे बैठकर बात करोगे, उसकी भावनाएँ समझोगे, और पूछोगे कि क्या तुम उसके लिए कुछ कर सकते हो।"]} },
+  { id:'sit4',
+    en:{story:"For annual day at school, Dheeraj has been given the responsibility to schedule performances. He has made a schedule, but 3 groups have now asked him to schedule their performance first. What should Dheeraj do?",
+      options:["Dheeraj should give the first slot to his closest friend.",
+        "So that no one is angry with Dheeraj, he should make number chits and ask every group to pull one, and schedule performances according to the chits.",
+        "Dheeraj should understand from each group why they want to go first, present what he thinks would be a good line-up, and then discuss with everyone to reach a consensus.",
+        "Dheeraj has already made a schedule, so he should explain to all that making changes will take a lot of time, and everyone should just stick to his plan."]},
+    hi:{story:"स्कूल के वार्षिक दिवस के लिए धीरज को प्रदर्शन शेड्यूल करने की ज़िम्मेदारी दी गई है। उसने एक शेड्यूल बनाया है, लेकिन 3 समूहों ने अपना प्रदर्शन पहले रखने के लिए कहा है। धीरज को क्या करना चाहिए?",
+      options:["धीरज को पहला स्थान अपने सबसे करीबी दोस्त को देना चाहिए।",
+        "कोई भी धीरज से नाराज़ न हो, इसलिए उसे नंबर की चिट बनाकर हर समूह से एक निकालने के लिए कहना चाहिए, और चिट के अनुसार प्रदर्शन तय करना चाहिए।",
+        "धीरज को हर समूह से समझना चाहिए कि वे पहले क्यों जाना चाहते हैं, अपनी राय भी बताना चाहिए, और सबके साथ चर्चा करके एक सहमति पर पहुँचना चाहिए।",
+        "धीरज ने पहले से ही शेड्यूल बना लिया है, इसलिए उसे सबको समझाना चाहिए कि बदलाव करने में बहुत समय लगेगा, और सबको उसकी बनाई योजना पर ही टिके रहना चाहिए।"]} },
+  { id:'sit5',
+    en:{story:"One day Ankit comes and tells his friend Sara that he wants to wear nail polish, and asks if she could put it on for him. Sara is feeling confused. What should she do?",
+      options:["While this is not usual, this will make her friend happy. Sara should say yes and do it.",
+        "Society expects boys and girls to act and dress a certain way, so Sara could feel confused. But it doesn't actually matter — she should simply ask her friend what colour he wants.",
+        "This is absurd, and everyone will laugh at Ankit and also at her for this. She should advise Ankit not to think about this, and say no.",
+        "Ankit can get bullied, so this is a tricky situation. She should put the nail polish, but also tell Ankit that if he gets bullied, he should ask for help, and that she will be there for him."]},
+    hi:{story:"एक दिन अंकित अपनी दोस्त सारा से पूछता है कि क्या वह उसके नाखूनों पर नेल पॉलिश लगा देगी। सारा थोड़ी असमंजस में है। उसे क्या करना चाहिए?",
+      options:["यह सामान्य नहीं है, लेकिन इससे उसके दोस्त को खुशी मिलेगी। सारा को हाँ कहकर लगा देना चाहिए।",
+        "समाज लड़कों और लड़कियों से एक तय तरीके से रहने की उम्मीद करता है, इसलिए सारा को असमंजस महसूस हो सकता है। लेकिन इससे कोई फ़र्क नहीं पड़ता। उसे सिर्फ़ अंकित से पूछना चाहिए कि उसे कौन सा रंग चाहिए।",
+        "यह अजीब बात है और सब अंकित पर और सारा पर भी हँसेंगे। उसे अंकित को समझाना चाहिए कि ऐसा न सोचे, और मना कर देना चाहिए।",
+        "अंकित को तंग किया जा सकता है, इसलिए यह उलझा हुआ मामला है। सारा को नेल पॉलिश लगा देनी चाहिए, लेकिन अंकित को यह भी बताना चाहिए कि अगर कोई उसे तंग करे तो मदद माँगे, और वह भी उसके साथ रहेगी।"]} },
+  { id:'sit6',
+    en:{story:"Salma and Ayushi go to school cycling together every day. One day Ayushi fell from the cycle and scraped her knee. Salma thought it was funny and laughed, but Ayushi was hurt by this. From the next day onwards, Ayushi stops coming with her. What should Salma do about it?",
+      options:["These things happen all the time. Since Ayushi didn't say anything to Salma, Salma doesn't need to ask or do anything.",
+        "This is silly. Salma should simply tell Ayushi to start coming back to school with her, and help her till her wound is better.",
+        "This is terrible. Salma should reach out to Ayushi immediately, understand what happened, apologize, and help her till her wound is healed.",
+        "This is too small a reason for Ayushi to stop coming with her, so Salma should just find new friends who can take jokes."]},
+    hi:{story:"सलमा और आयुषी रोज़ साथ साइकिल से स्कूल जाती हैं। एक दिन आयुषी साइकिल से गिर गई और उसके घुटने में चोट लग गई। सलमा को यह मज़ाकिया लगा और वह हँस पड़ी, लेकिन आयुषी को इससे दुख हुआ। अगले दिन से आयुषी उसके साथ आना बंद कर देती है। सलमा को क्या करना चाहिए?",
+      options:["ऐसी बातें होती रहती हैं। चूँकि आयुषी ने कुछ कहा नहीं, इसलिए सलमा को कुछ पूछने या करने की ज़रूरत नहीं है।",
+        "यह छोटी बात है। सलमा को सीधे आयुषी से कहना चाहिए कि वह फिर से साथ आए, और उसकी चोट ठीक होने तक मदद करनी चाहिए।",
+        "यह गंभीर बात है। सलमा को तुरंत आयुषी से बात करनी चाहिए, समझना चाहिए कि क्या हुआ, माफ़ी माँगनी चाहिए, और उसकी चोट ठीक होने तक मदद करनी चाहिए।",
+        "आयुषी का साथ छोड़ना बहुत छोटी बात है, इसलिए सलमा को नए दोस्त ढूँढ लेने चाहिए जो मज़ाक सह सकें।"]} },
+  { id:'sit7',
+    en:{story:"Arbaaz and his friends have a cricket tournament to play after school. Only after reaching home did he remember he had a lot of homework left, and he will be tired to complete it if he goes to play. What should Arbaaz do?",
+      options:["Arbaaz should skip the homework and go to play. He can complete it at night or the next day at school.",
+        "Since Arbaaz loves playing, he should go and play the match, make some excuse, and return early to finish his homework.",
+        "Arbaaz should tell his friends that he won't be able to come and play since he has homework to complete. Then finish it immediately and enjoy free time at home.",
+        "Arbaaz should inform his friends and find a substitute for the match, and finish his homework in time."]},
+    hi:{story:"अरबाज़ और उसके दोस्तों को स्कूल के बाद क्रिकेट टूर्नामेंट खेलना है। घर पहुँचने पर उसे याद आया कि उसका बहुत सारा होमवर्क बाकी है, और खेलने जाने पर वह उसे पूरा करते-करते थक जाएगा। अरबाज़ को क्या करना चाहिए?",
+      options:["अरबाज़ को होमवर्क छोड़कर खेलने जाना चाहिए। वह इसे रात में या अगले दिन स्कूल में पूरा कर सकता है।",
+        "चूँकि अरबाज़ को खेलना पसंद है, उसे मैच खेलने जाना चाहिए, कोई बहाना बनाकर जल्दी लौटना चाहिए और होमवर्क पूरा करना चाहिए।",
+        "अरबाज़ को दोस्तों को बताना चाहिए कि वह होमवर्क की वजह से नहीं आ पाएगा। फिर उसे तुरंत पूरा करके घर पर खाली समय का आनंद लेना चाहिए।",
+        "अरबाज़ को दोस्तों को बताकर मैच के लिए किसी और को ढूँढने में मदद करनी चाहिए, और समय पर अपना होमवर्क पूरा करना चाहिए।"]} },
+  { id:'sit8',
+    en:{story:"Nandini has a lot to study for her exam next week, but her friend has asked to speak to her as she is feeling sad. Nandini knows she won't be able to complete her studies if she talks to her friend. What should Nandini do?",
+      options:["One can't say no to a friend in distress, so Nandini should talk to the friend and then manage her own studies later.",
+        "Exams are more important, so Nandini should ignore her friend and talk to her after exams are over.",
+        "Since there are many other things to do as well, like housework and playing, Nandini should tell her friend she cannot talk to her.",
+        "Nandini should tell her friend that she cannot talk right now, but should help her find another friend to talk to about it."]},
+    hi:{story:"नंदिनी को अगले हफ्ते परीक्षा के लिए बहुत पढ़ना है, लेकिन उसकी दोस्त उदास है और बात करना चाहती है। नंदिनी जानती है कि दोस्त से बात करने पर वह पढ़ाई पूरी नहीं कर पाएगी। नंदिनी को क्या करना चाहिए?",
+      options:["मुसीबत में दोस्त को मना नहीं किया जा सकता, इसलिए नंदिनी को दोस्त से बात करनी चाहिए और बाद में पढ़ाई का इंतज़ाम करना चाहिए।",
+        "परीक्षा ज़्यादा महत्वपूर्ण है, इसलिए नंदिनी को दोस्त को नज़रअंदाज़ करना चाहिए और परीक्षा के बाद बात करनी चाहिए।",
+        "चूँकि घर का काम, खेलना जैसे और भी काम हैं, नंदिनी को दोस्त को बताना चाहिए कि वह अभी बात नहीं कर सकती।",
+        "नंदिनी को दोस्त को बताना चाहिए कि वह अभी बात नहीं कर सकती, लेकिन उसे किसी और दोस्त से बात करने में मदद करनी चाहिए।"]} },
+  { id:'sit9',
+    en:{story:"Simran prepares for her Maths exam tomorrow. But when she reaches the exam, she realises that she has a Science exam today, not Maths. What should she do now?",
+      options:["Simran feels ashamed that anyone else will get to know about this. So she should consider telling the teacher that she feels sick, and try to skip the exam.",
+        "Simran will feel very tense. She should accept that mistakes happen to everyone, try to calm herself, and write whatever she knows.",
+        "Simran feels ashamed to tell her teacher about this, but will share it with her friends and write whatever she knows.",
+        "Simran gets scared; she tells her friends about this. She just skips the exam and returns home, as that is the safest option."]},
+    hi:{story:"सिमरन कल के मैथ्स एग्ज़ाम की तैयारी करती है, लेकिन परीक्षा में पहुँचने पर उसे पता चलता है कि आज साइंस का एग्ज़ाम है, मैथ्स का नहीं। उसे अब क्या करना चाहिए?",
+      options:["सिमरन को शर्म आती है कि यह बात किसी और को पता चलेगी। उसे शिक्षक को बताना चाहिए कि वह बीमार है और परीक्षा छोड़ने की कोशिश करनी चाहिए।",
+        "सिमरन को बहुत तनाव होगा। उसे स्वीकार करना चाहिए कि गलतियाँ सबसे होती हैं, खुद को शांत करना चाहिए, और जो जानती है वह लिखना चाहिए।",
+        "सिमरन को शिक्षक को बताने में शर्म आती है, लेकिन वह दोस्तों को बताएगी और जो जानती है वह लिखेगी।",
+        "सिमरन डर जाती है और दोस्तों को बताती है। वह परीक्षा छोड़कर घर लौट जाती है, यह सोचकर कि यही सबसे सुरक्षित है।"]} },
+  { id:'sit10',
+    en:{story:"In Aman's neighbourhood, there are some people who are troubling stray animals. Aman's family does not object to this. If this happens again, what should Aman do?",
+      options:["There is nothing to feel bad about, so Aman doesn't have to do anything.",
+        "Even though this is terrible, since Aman's family will not support him, he should not do anything.",
+        "Aman should try and protect the animals himself.",
+        "Aman should try and organise other people and children in the neighbourhood who love animals, and plan out some awareness and protection activities."]},
+    hi:{story:"अमन के पड़ोस में कुछ लोग आवारा जानवरों को परेशान कर रहे हैं। अमन के परिवार को इस पर कोई आपत्ति नहीं है। अगर ऐसा फिर हो, तो अमन को क्या करना चाहिए?",
+      options:["इसमें बुरा मानने की कोई बात नहीं है, इसलिए अमन को कुछ नहीं करना चाहिए।",
+        "यह भयानक है, लेकिन चूँकि अमन का परिवार साथ नहीं देगा, उसे कुछ नहीं करना चाहिए।",
+        "अमन को खुद जानवरों की सुरक्षा करने की कोशिश करनी चाहिए।",
+        "अमन को पड़ोस के अन्य लोगों और बच्चों को साथ लाकर जागरूकता और सुरक्षा की गतिविधियाँ आयोजित करनी चाहिए।"]} },
+  { id:'sit11',
+    en:{story:"Mitali's caregivers have decided to shift to their village. She has been given the option to either stay in the city with people her family knows well, or go to the village. How should Mitali choose what is best for her?",
+      options:["There is not much in the village, so Mitali should not think too much and stay back in the city.",
+        "Mitali should think about where she can study better, and should consider the decision keeping her caregivers and her friends in mind.",
+        "Mitali should go to the village with her caregivers and try to study there.",
+        "All of Mitali's friends are here in the city, so she should stay back here."]},
+    hi:{story:"मिताली के देखभाल करने वालों ने गाँव जाने का फैसला किया है। उसे विकल्प दिया गया है कि वह शहर में उन लोगों के साथ रहे जिन्हें परिवार अच्छी तरह जानता है, या गाँव चली जाए। मिताली को यह कैसे तय करना चाहिए कि उसके लिए सबसे अच्छा क्या है?",
+      options:["गाँव में ज़्यादा कुछ नहीं है, इसलिए मिताली को ज़्यादा न सोचकर शहर में ही रहना चाहिए।",
+        "मिताली को सोचना चाहिए कि वह कहाँ बेहतर पढ़ाई कर सकती है, और अपने देखभाल करने वालों और दोस्तों को ध्यान में रखकर फैसला लेना चाहिए।",
+        "मिताली को अपने देखभाल करने वालों के साथ गाँव जाना चाहिए और वहाँ पढ़ने की कोशिश करनी चाहिए।",
+        "मिताली के सभी दोस्त शहर में हैं, इसलिए उसे यहीं रहना चाहिए।"]} },
+  { id:'sit12',
+    en:{story:"Mitali decided to stay back in the city. But she is missing her family, and the government school building she goes to is going to change. She is now thinking if she made the right decision. What should she do now?",
+      options:["She should try to calm herself and come back to this thought after the academic year is over.",
+        "She should tell her family and shift to the village immediately.",
+        "Once you take a decision, you should stick to it, so Mitali should do nothing and continue to stay in the city.",
+        "She should tell her family how she feels, and collectively decide what is best for her."]},
+    hi:{story:"मिताली ने शहर में रहने का फैसला किया, लेकिन उसे परिवार की याद आती है, और उसका सरकारी स्कूल भवन बदलने वाला है। वह सोच रही है कि क्या उसने सही फैसला लिया। उसे अब क्या करना चाहिए?",
+      options:["उसे खुद को शांत करना चाहिए और शैक्षणिक वर्ष खत्म होने के बाद इस बारे में फिर सोचना चाहिए।",
+        "उसे परिवार को बताना चाहिए और तुरंत गाँव चले जाना चाहिए।",
+        "एक बार फैसला लेने के बाद उस पर टिके रहना चाहिए, इसलिए मिताली को कुछ नहीं करना चाहिए और शहर में ही रहना चाहिए।",
+        "उसे परिवार को बताना चाहिए कि उसे कैसा महसूस हो रहा है, और साथ मिलकर तय करना चाहिए कि उसके लिए क्या सबसे अच्छा है।"]} },
+];
+
+const SR_DOMAIN_BY_PREFIX = { SA:'Self Awareness', SM:'Self Management', SO:'Social Awareness', RS:'Relationship Skills', RD:'Responsible Decision Making' };
+
+const SR_ITEMS = [
+  {id:'sa1a', code:'SA1', en:"I can describe my mood and how I am feeling in different situations and different times.", hi:"मैं अलग-अलग स्थितियों और अलग-अलग समयों पर अपने मूड और भावनाओं का वर्णन कर सकता/सकती हूँ।"},
+  {id:'sa2', code:'SA2', en:"I can recognize what values are important to me and why", hi:"मैं पहचान सकता/सकती हूँ कि मेरे लिए कौन से मूल्य महत्वपूर्ण हैं और क्यों।"},
+  {id:'sa3', code:'SA3', en:"I can identify what my needs are in my life and how to work towards them", hi:"मैं पहचान सकता/सकती हूँ कि मेरी ज़िंदगी में मेरी ज़रूरतें क्या हैं और उन्हें पूरा करने के लिए कैसे काम करूँ।"},
+  {id:'sa1b', code:'SA1', en:"When I am feeling anxious about something I can figure out why.", hi:"जब मैं किसी बात को लेकर चिंतित महसूस करता/करती हूँ, तो मैं समझ सकता/सकती हूँ कि ऐसा क्यों हो रहा है।"},
+  {id:'sa4', code:'SA4', en:"I spend time doing activities that I am good at / like (Eg: Drawing, playing football, kite flying, playing marbles)", hi:"मैं उन गतिविधियों में समय बिताता/बिताती हूँ जिनमें मैं अच्छा/अच्छी हूँ या जो मुझे पसंद हैं (जैसे: चित्रकारी, फुटबॉल खेलना, पतंग उड़ाना, कंचे खेलना)।"},
+  {id:'sa6', code:'SA6', en:"I can describe how my experiences have shaped who I am", hi:"मैं बता सकता/सकती हूँ कि मेरे अनुभवों ने मुझे कैसा इंसान बनाया है।"},
+  {id:'sa5', code:'SA5', en:"I can understand why we behave differently when we are in different moods", hi:"मैं समझ सकता/सकती हूँ कि अलग-अलग मूड में हम अलग तरह से व्यवहार क्यों करते हैं।"},
+  {id:'sm1', code:'SM1', en:"When I get distracted during an activity I am able to focus back on it", hi:"जब किसी गतिविधि के दौरान मेरा ध्यान भटकता है, तो मैं फिर से उस पर ध्यान लगा सकता/सकती हूँ।"},
+  {id:'sm6a', code:'SM6', en:"I know how to get help when I'm having trouble with a classmate.", hi:"मुझे पता है कि जब किसी सहपाठी के साथ परेशानी हो तो मदद कैसे लूँ।"},
+  {id:'sm2', code:'SM2', en:"When I have a major exam, project or any important task to complete, I make a plan and work towards it", hi:"जब मुझे कोई बड़ी परीक्षा, प्रोजेक्ट या महत्वपूर्ण काम पूरा करना होता है, तो मैं एक योजना बनाता/बनाती हूँ और उस पर काम करता/करती हूँ।"},
+  {id:'sm3a', code:'SM3', en:"When I make a mistake, I admit it and reflect on the reasons", hi:"जब मुझसे गलती होती है, तो मैं उसे स्वीकार करता/करती हूँ और उसके कारणों पर विचार करता/करती हूँ।"},
+  {id:'sm6b', code:'SM6', en:"When I need help I ask for it", hi:"जब मुझे मदद की ज़रूरत होती है, तो मैं मदद माँगता/माँगती हूँ।"},
+  {id:'sm3b', code:'SM3', en:"When I do badly on a test, I try not to dwell on it and focus on what I can do now", hi:"जब किसी टेस्ट में मेरा प्रदर्शन खराब होता है, तो मैं उस पर ज़्यादा नहीं सोचता/सोचती और अभी क्या कर सकता/सकती हूँ, उस पर ध्यान देता/देती हूँ।"},
+  {id:'so4', code:'SO4', en:"I communicate my gratitude to my friends, family, caregivers, teachers etc.", hi:"मैं अपने दोस्तों, परिवार, देखभाल करने वालों, शिक्षकों आदि के प्रति अपनी कृतज्ञता व्यक्त करता/करती हूँ।"},
+  {id:'so6', code:'SO6', en:"I'm careful when I use things that are not mine.", hi:"जब मैं किसी और की चीज़ों का उपयोग करता/करती हूँ, तो सावधानी रखता/रखती हूँ।"},
+  {id:'so2', code:'SO2', en:"I know how I feel when others are angry or disappointed with me.", hi:"मुझे पता होता है कि जब दूसरे मुझसे नाराज़ या निराश होते हैं तो मुझे कैसा महसूस होता है।"},
+  {id:'so1', code:'SO1', en:"I recognize when something I do makes someone happy, upset, or angry", hi:"मैं पहचान सकता/सकती हूँ कि मेरे किए किसी काम से कोई खुश, परेशान या नाराज़ हुआ है।"},
+  {id:'so3', code:'SO3', en:"I learn from people with different opinions than me.", hi:"मैं उन लोगों से सीखता/सीखती हूँ जिनकी राय मुझसे अलग होती है।"},
+  {id:'rs3', code:'RS3', en:"I contribute while working in groups", hi:"समूह में काम करते समय मैं अपना योगदान देता/देती हूँ।"},
+  {id:'rs5', code:'RS5', en:"Others confide their problems in me", hi:"दूसरे लोग अपनी समस्याएँ मुझसे साझा करते हैं।"},
+  {id:'rs6a', code:'RS6', en:"I take actions in support of others when they are not treated well.", hi:"जब किसी के साथ अच्छा व्यवहार नहीं होता, तो मैं उनके समर्थन में कदम उठाता/उठाती हूँ।"},
+  {id:'rs4', code:'RS4', en:"I find different ways to end a disagreement respectfully", hi:"मैं किसी असहमति को सम्मानपूर्वक सुलझाने के अलग-अलग तरीके खोजता/खोजती हूँ।"},
+  {id:'rs1', code:'RS1', en:"When I am not treated well I communicate it to the person.", hi:"जब मेरे साथ अच्छा व्यवहार नहीं होता, तो मैं इसे उस व्यक्ति को बताता/बताती हूँ।"},
+  {id:'rs6b', code:'RS6', en:"If I do something that upsets someone, I apologize and take the action required in that situation", hi:"अगर मेरी किसी बात से किसी को दुख होता है, तो मैं माफ़ी माँगता/माँगती हूँ और ज़रूरी कदम उठाता/उठाती हूँ।"},
+  {id:'rs7', code:'RS7', en:"When I see someone is in trouble I find ways to help them", hi:"जब मैं देखता/देखती हूँ कि कोई परेशानी में है, तो मैं उनकी मदद के तरीके ढूँढता/ढूँढती हूँ।"},
+  {id:'rd4a', code:'RD4', en:"I think about what might happen before making a decision.", hi:"कोई फैसला लेने से पहले मैं सोचता/सोचती हूँ कि इसका क्या नतीजा हो सकता है।"},
+  {id:'rd1', code:'RD1', en:"I contribute to work that improves my area or the place I live in", hi:"मैं उस काम में योगदान देता/देती हूँ जिससे मेरा इलाका या मेरी रहने की जगह बेहतर हो।"},
+  {id:'rd2', code:'RD2', en:"I ensure that there are more positive outcomes when making a choice.", hi:"कोई चुनाव करते समय मैं यह सुनिश्चित करता/करती हूँ कि सकारात्मक नतीजे ज़्यादा हों।"},
+  {id:'rd4b', code:'RD4', en:"I consider the pros and cons of the strategy before deciding to use it.", hi:"किसी तरीके को अपनाने का फैसला करने से पहले मैं उसके फ़ायदे और नुकसान पर विचार करता/करती हूँ।"},
+  {id:'rd5', code:'RD5', en:"When I realise that I have made a poor decision, I try to learn from it and take responsibility for the consequences", hi:"जब मुझे पता चलता है कि मैंने कोई गलत फैसला लिया है, तो मैं उससे सीखने की कोशिश करता/करती हूँ और नतीजों की ज़िम्मेदारी लेता/लेती हूँ।"},
+];
+
+const DOMAIN_HUE = { 'Self Awareness':235, 'Self Management':155, 'Social Awareness':85, 'Relationship Skills':300, 'Responsible Decision Making':20 };
+
+class Component extends DCLogic {
+  state = {
+    mode: 'observation',
+    lang: 'en',
+    view: 'setup',
+    grade: 'Jr. KG',
+    cycle: 'Pre',
+    studentIndex: 0,
+    obsStore: {},
+    sjtStore: {},
+    srStore: {},
+    toast: null,
+  };
+
+  componentDidMount() {
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const m = p.get('mode');
+      if (m === 'observation' || m === 'sjt' || m === 'response') this.setState({ mode: m });
+      const b = p.get('startBand');
+      if (b === 'k3') this.setState({ grade: 'Jr. KG' });
+      else if (b === 'g4') this.setState({ grade: 'Grade 4' });
+    } catch (e) {}
+  }
+
+  isGradeValidForMode(mode, grade) {
+    return mode === 'observation' ? (K3_GRADES.includes(grade) || G4_GRADES.includes(grade)) : SR_GRADES.includes(grade);
+  }
+  switchMode = (mode) => this.setState(st => (this.isGradeValidForMode(mode, st.grade) ? { mode } : st));
+  setModeObservation = () => this.switchMode('observation');
+  setModeSjt = () => this.switchMode('sjt');
+  setModeResponse = () => this.switchMode('response');
+
+  goToDashboard = () => { window.location.href = 'Khoj Dashboard.dc.html'; };
+  setLangEn = () => this.setState({ lang: 'en' });
+  setLangHi = () => this.setState({ lang: 'hi' });
+  onGradePick = (e) => this.setState(st => {
+    const grade = e.target.value;
+    return { grade, mode: this.isGradeValidForMode(st.mode, grade) ? st.mode : 'observation' };
+  });
+  setPre = () => this.setState({ cycle: 'Pre' });
+  setPost = () => this.setState({ cycle: 'Post' });
+  startEntry = () => this.setState({ view: 'entry', studentIndex: 0 });
+  changeSetup = () => this.setState({ view: 'setup' });
+  backToEntry = () => this.setState({ view: 'entry' });
+  startNewSession = () => this.setState({ view: 'setup', studentIndex: 0 });
+
+  getStudentsForGrade(grade) {
+    return ALL_STUDENTS.filter(s => s.grade === grade);
+  }
+  getItemsForGrade(grade) {
+    return K3_GRADES.includes(grade) ? ITEMS_K3 : ITEMS_G4;
+  }
+  getKey(mode, grade, cycle, studentId) {
+    return mode + '|' + grade + '|' + cycle + '|' + studentId;
+  }
+
+  prevStudent = () => this.setState(st => ({ studentIndex: Math.max(0, st.studentIndex - 1) }));
+  nextStudent = () => this.setState(st => {
+    const max = this.getStudentsForGrade(st.grade).length - 1;
+    return { studentIndex: Math.min(max, st.studentIndex + 1) };
+  });
+  onStudentSelect = (e) => this.setState({ studentIndex: parseInt(e.target.value, 10) });
+
+  setObsScore = (itemId, n) => {
+    const st = this.state;
+    const students = this.getStudentsForGrade(st.grade);
+    const s = students[st.studentIndex] || students[0];
+    const key = this.getKey('observation', st.grade, st.cycle, s.id);
+    this.setState(prev => {
+      const cur = prev.obsStore[key] || {};
+      return { obsStore: { ...prev.obsStore, [key]: { ...cur, [itemId]: n } } };
+    });
+  };
+
+  pickSjtOption = (situationId, letter) => {
+    const st = this.state;
+    const students = this.getStudentsForGrade(st.grade);
+    const s = students[st.studentIndex] || students[0];
+    const key = this.getKey('sjt', st.grade, st.cycle, s.id);
+    this.setState(prev => {
+      const cur = prev.sjtStore[key] || {};
+      return { sjtStore: { ...prev.sjtStore, [key]: { ...cur, [situationId]: letter } } };
+    });
+  };
+
+  setSrScore = (itemId, n) => {
+    const st = this.state;
+    const students = this.getStudentsForGrade(st.grade);
+    const s = students[st.studentIndex] || students[0];
+    const key = this.getKey('response', st.grade, st.cycle, s.id);
+    this.setState(prev => {
+      const cur = prev.srStore[key] || {};
+      return { srStore: { ...prev.srStore, [key]: { ...cur, [itemId]: n } } };
+    });
+  };
+
+  clearStudent = () => {
+    const st = this.state;
+    const students = this.getStudentsForGrade(st.grade);
+    const s = students[st.studentIndex] || students[0];
+    this.setState(prev => {
+      if (st.mode === 'observation') {
+        const key = this.getKey('observation', st.grade, st.cycle, s.id);
+        const store = { ...prev.obsStore }; delete store[key];
+        return { obsStore: store, toast: 'Cleared' };
+      }
+      if (st.mode === 'sjt') {
+        const key = this.getKey('sjt', st.grade, st.cycle, s.id);
+        const store = { ...prev.sjtStore }; delete store[key];
+        return { sjtStore: store, toast: 'Cleared' };
+      }
+      const key = this.getKey('response', st.grade, st.cycle, s.id);
+      const store = { ...prev.srStore }; delete store[key];
+      return { srStore: store, toast: 'Cleared' };
+    });
+    setTimeout(() => this.setState({ toast: null }), 1400);
+  };
+
+  saveEntry = () => {
+    this.setState({ view: 'summary', toast: 'Entry saved' });
+    setTimeout(() => this.setState({ toast: null }), 1400);
+  };
+
+  renderVals() {
+    const { mode, lang, view, grade, cycle, studentIndex, obsStore, sjtStore, srStore, toast } = this.state;
+    const isObservationMode = mode === 'observation';
+    const isSjtMode = mode === 'sjt';
+    const isResponseMode = mode === 'response';
+    const students = this.getStudentsForGrade(grade);
+    const idx = Math.min(studentIndex, Math.max(0, students.length - 1));
+    const student = students[idx] || { id: 'none', name: '—' };
+
+    const btnBase = 'padding:8px 14px;border-radius:8px;border:none;font-size:12.5px;font-weight:700;cursor:pointer;';
+    const activeStyle = btnBase + 'background:#fff;color:oklch(30% 0.02 250);box-shadow:0 1px 2px rgba(0,0,0,.08);border-radius:8px;';
+    const inactiveStyle = btnBase + 'background:transparent;color:oklch(52% 0.02 250);border-radius:8px;';
+    const disabledStyle = btnBase + 'background:transparent;color:oklch(75% 0.01 250);border-radius:8px;cursor:not-allowed;';
+    const srModesDisabled = !SR_GRADES.includes(grade);
+
+    const studentsInGradeCount = students.length;
+
+    // ----- Observation view models -----
+    let obsGroupedVM = [], obsAnswered = 0;
+    const obsKey = this.getKey('observation', grade, cycle, student.id);
+    const obsScores = obsStore[obsKey] || {};
+    const obsItems = this.getItemsForGrade(grade);
+    obsAnswered = Object.keys(obsScores).length;
+
+    function buildObsGroups(itemList, forSummary, scoresForSummary) {
+      const groupsMap = {}; const order = [];
+      itemList.forEach(it => {
+        if (!groupsMap[it.domain]) { groupsMap[it.domain] = []; order.push(it.domain); }
+        groupsMap[it.domain].push(it);
+      });
+      let globalIndex = 0;
+      return order.map(domain => {
+        const domItems = groupsMap[domain];
+        const hue = DOMAIN_HUE[domain] || 235;
+        let domAnswered = 0;
+        const itemsVM = domItems.map(it => {
+          globalIndex += 1;
+          if (forSummary) {
+            const agg = scoresForSummary[it.id] || { sum: 0, n: 0 };
+            const avg = agg.n ? agg.sum / agg.n : 0;
+            return {
+              id: it.id, title: it.title,
+              avgLabel: agg.n ? avg.toFixed(1) : '—', n: agg.n,
+              barStyle: `height:100%;border-radius:4px;background:oklch(55% 0.12 ${hue});width:${agg.n ? (avg / 4 * 100) : 0}%`,
+            };
+          }
+          const sel = obsScores[it.id];
+          if (sel) domAnswered += 1;
+          const scoreOptions = [1, 2, 3, 4].map(n => {
+            const isSel = sel === n;
+            return {
+              n,
+              style: 'width:40px;height:40px;border-radius:9px;font-size:14px;font-weight:800;cursor:pointer;' +
+                (isSel ? `background:oklch(55% 0.12 ${hue});color:#fff;border:none;` : 'background:#fff;color:oklch(45% 0.02 250);border:1.5px solid oklch(88% 0.006 250);'),
+              onClick: () => this.setObsScore(it.id, n),
+            };
+          });
+          return {
+            id: it.id, number: String(globalIndex).padStart(2, '0'), title: it.title, guidance: it.guidance,
+            badgeStyle: `font-size:10px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:oklch(94% 0.03 ${hue});color:oklch(38% 0.11 ${hue});white-space:nowrap`,
+            scoreOptions,
+          };
+        });
+        return { name: domain, dotStyle: `width:9px;height:9px;border-radius:50%;background:oklch(55% 0.12 ${hue});display:inline-block`, items: itemsVM, answered: domAnswered, total: domItems.length };
+      });
+    }
+
+    if (view === 'entry' && isObservationMode) {
+      obsGroupedVM = buildObsGroups.call(this, obsItems, false, null);
+    }
+
+    let obsSummaryGroupedVM = [], obsOverallAvgLabel = '—';
+    if (view === 'summary' && isObservationMode) {
+      const agg = {}; let sumAll = 0, nAll = 0;
+      students.forEach(s => {
+        const k = this.getKey('observation', grade, cycle, s.id);
+        const sc = obsStore[k];
+        if (!sc) return;
+        Object.keys(sc).forEach(itemId => {
+          if (!agg[itemId]) agg[itemId] = { sum: 0, n: 0 };
+          agg[itemId].sum += sc[itemId]; agg[itemId].n += 1;
+          sumAll += sc[itemId]; nAll += 1;
+        });
+      });
+      obsSummaryGroupedVM = buildObsGroups.call(this, obsItems, true, agg);
+      obsOverallAvgLabel = nAll ? (sumAll / nAll).toFixed(1) : '—';
+    }
+
+    // ----- SJT view models -----
+    let situationsVM = [], sjtAnswered = 0, sjtSummaryVM = [];
+    const sjtKey = this.getKey('sjt', grade, cycle, student.id);
+    const sjtScores = sjtStore[sjtKey] || {};
+    SITUATIONS.forEach((sit) => { if (sjtScores[sit.id]) sjtAnswered += 1; });
+
+    if (view === 'entry' && isSjtMode) {
+      situationsVM = SITUATIONS.map((sit, i) => {
+        const d = lang === 'hi' ? sit.hi : sit.en;
+        const chosen = sjtScores[sit.id];
+        const letters = ['a', 'b', 'c', 'd'];
+        return {
+          number: i + 1, story: d.story, textClass: lang === 'hi' ? 'hi' : '',
+          options: d.options.map((text, oi) => {
+            const letter = letters[oi];
+            const isSel = chosen === letter;
+            return {
+              letter, text,
+              onClick: () => this.pickSjtOption(sit.id, letter),
+              rowStyle: 'display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:10px;cursor:pointer;' +
+                (isSel ? 'background:oklch(94% 0.03 235);border:1.5px solid oklch(55% 0.12 235);' : 'background:oklch(98% 0.003 250);border:1.5px solid transparent;'),
+              letterStyle: 'width:22px;height:22px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;text-transform:uppercase;' +
+                (isSel ? 'background:oklch(55% 0.12 235);color:#fff;' : 'background:oklch(92% 0.006 250);color:oklch(45% 0.02 250);'),
+            };
+          }),
+        };
+      });
+    }
+    if (view === 'summary' && isSjtMode) {
+      sjtSummaryVM = SITUATIONS.map((sit, i) => {
+        const counts = { a: 0, b: 0, c: 0, d: 0 };
+        let n = 0;
+        students.forEach(s => {
+          const k = this.getKey('sjt', grade, cycle, s.id);
+          const sc = sjtStore[k];
+          if (sc && sc[sit.id]) { counts[sc[sit.id]] += 1; n += 1; }
+        });
+        return {
+          number: i + 1, n,
+          options: ['a', 'b', 'c', 'd'].map(letter => {
+            const pct = n ? Math.round((counts[letter] / n) * 100) : 0;
+            return { letter, pctLabel: n ? pct + '%' : '—', barStyle: `height:100%;border-radius:4px;background:oklch(55% 0.12 235);width:${pct}%` };
+          }),
+        };
+      });
+    }
+
+    // ----- Response view models -----
+    let groupedVM = [], responseSummaryGroupedVM = [], responseOverallAvgLabel = '—';
+    const srKey = this.getKey('response', grade, cycle, student.id);
+    const srScores = srStore[srKey] || {};
+    let srAnswered = Object.keys(srScores).length;
+    if (view === 'entry' && isResponseMode) {
+      const groupsMap = {}; const order = [];
+      SR_ITEMS.forEach(it => {
+        const domain = SR_DOMAIN_BY_PREFIX[it.code.slice(0, 2)];
+        if (!groupsMap[domain]) { groupsMap[domain] = []; order.push(domain); }
+        groupsMap[domain].push(it);
+      });
+      groupedVM = order.map(domain => {
+        const domItems = groupsMap[domain];
+        const hue = DOMAIN_HUE[domain] || 235;
+        let domAnswered = 0;
+        const itemsVM = domItems.map(it => {
+          const sel = srScores[it.id];
+          if (sel) domAnswered += 1;
+          const scoreOptions = [1, 2, 3, 4].map(n => {
+            const isSel = sel === n;
+            return {
+              n,
+              style: 'width:38px;height:38px;border-radius:9px;font-size:13.5px;font-weight:800;cursor:pointer;' +
+                (isSel ? `background:oklch(55% 0.12 ${hue});color:#fff;border:none;` : 'background:#fff;color:oklch(45% 0.02 250);border:1.5px solid oklch(88% 0.006 250);'),
+              onClick: () => this.setSrScore(it.id, n),
+            };
+          });
+          return {
+            id: it.id, code: it.code, text: lang === 'hi' ? it.hi : it.en, textClass: lang === 'hi' ? 'hi' : '',
+            badgeStyle: `font-size:10px;font-weight:700;letter-spacing:.02em;text-transform:uppercase;padding:2px 8px;border-radius:6px;background:oklch(94% 0.03 ${hue});color:oklch(38% 0.11 ${hue});white-space:nowrap`,
+            scoreOptions,
+          };
+        });
+        return { name: domain, dotStyle: `width:9px;height:9px;border-radius:50%;background:oklch(55% 0.12 ${hue});display:inline-block`, items: itemsVM, answered: domAnswered, total: domItems.length };
+      });
+    }
+    if (view === 'summary' && isResponseMode) {
+      const groupsMap = {}; const order = [];
+      SR_ITEMS.forEach(it => {
+        const domain = SR_DOMAIN_BY_PREFIX[it.code.slice(0, 2)];
+        if (!groupsMap[domain]) { groupsMap[domain] = []; order.push(domain); }
+        groupsMap[domain].push(it);
+      });
+      let sumAll = 0, nAll = 0;
+      const agg = {};
+      students.forEach(s => {
+        const k = this.getKey('response', grade, cycle, s.id);
+        const sc = srStore[k];
+        if (!sc) return;
+        Object.keys(sc).forEach(itemId => {
+          if (!agg[itemId]) agg[itemId] = { sum: 0, n: 0 };
+          agg[itemId].sum += sc[itemId]; agg[itemId].n += 1;
+          sumAll += sc[itemId]; nAll += 1;
+        });
+      });
+      responseSummaryGroupedVM = order.map(domain => {
+        const domItems = groupsMap[domain];
+        const hue = DOMAIN_HUE[domain] || 235;
+        const itemsVM = domItems.map(it => {
+          const a = agg[it.id] || { sum: 0, n: 0 };
+          const avg = a.n ? a.sum / a.n : 0;
+          return { title: it.code, avgLabel: a.n ? avg.toFixed(1) : '—', n: a.n, barStyle: `height:100%;border-radius:4px;background:oklch(55% 0.12 ${hue});width:${a.n ? (avg / 4 * 100) : 0}%` };
+        });
+        return { name: domain, dotStyle: `width:9px;height:9px;border-radius:50%;background:oklch(55% 0.12 ${hue});display:inline-block`, items: itemsVM };
+      });
+      responseOverallAvgLabel = nAll ? (sumAll / nAll).toFixed(1) : '—';
+    }
+
+    const totalCount = isObservationMode ? obsItems.length : (isSjtMode ? SITUATIONS.length : SR_ITEMS.length);
+    const answeredCount = isObservationMode ? obsAnswered : (isSjtMode ? sjtAnswered : srAnswered);
+    const pct = totalCount ? Math.round((answeredCount / totalCount) * 100) : 0;
+
+    const studentsEnteredCount = students.filter(s => {
+      if (isObservationMode) { const k = this.getKey('observation', grade, cycle, s.id); return obsStore[k] && Object.keys(obsStore[k]).length > 0; }
+      if (isSjtMode) { const k = this.getKey('sjt', grade, cycle, s.id); return sjtStore[k] && Object.keys(sjtStore[k]).length > 0; }
+      const k = this.getKey('response', grade, cycle, s.id); return srStore[k] && Object.keys(srStore[k]).length > 0;
+    }).length;
+
+    const toolTitle = isObservationMode ? 'SEL Observation Tool' : (isSjtMode ? 'SEL SJT' : 'SEL Student Response');
+    const topBarNote = isObservationMode ? 'Teacher-rated · scored 1–4 per rubric item' : 'Grades 6–10 only';
+    const summaryGroupedVM = isObservationMode ? obsSummaryGroupedVM : responseSummaryGroupedVM;
+    const overallAvgLabel = isObservationMode ? obsOverallAvgLabel : responseOverallAvgLabel;
+
+    return {
+      toast,
+      goToDashboard: this.goToDashboard,
+      toolTitle, topBarNote,
+      langEnBtnStyle: (lang === 'en' ? activeStyle : inactiveStyle),
+      langHiBtnStyle: (lang === 'hi' ? activeStyle : inactiveStyle),
+      setLangEn: this.setLangEn, setLangHi: this.setLangHi,
+      isSetup: view === 'setup', isEntry: view === 'entry', isSummary: view === 'summary',
+      isObservationMode, isSjtMode, isResponseMode,
+      isNonObservationMode: !isObservationMode,
+      modeObservationBtnStyle: (isObservationMode ? activeStyle : inactiveStyle),
+      modeSjtBtnStyle: (srModesDisabled ? disabledStyle : (isSjtMode ? activeStyle : inactiveStyle)),
+      modeResponseBtnStyle: (srModesDisabled ? disabledStyle : (isResponseMode ? activeStyle : inactiveStyle)),
+      setModeObservation: this.setModeObservation, setModeSjt: this.setModeSjt, setModeResponse: this.setModeResponse,
+      srModesDisabled,
+      srHintStyle: 'margin:0 0 18px;font-size:11.5px;color:oklch(58% 0.02 250);visibility:' + (srModesDisabled ? 'visible' : 'hidden'),
+      grade, allGradesVM: ALL_GRADES, k3GradesVM: K3_GRADES, g4GradesVM: G4_GRADES, srGradesVM: SR_GRADES, onGradePick: this.onGradePick,
+      cycle,
+      preBtnStyle: (cycle === 'Pre' ? activeStyle : inactiveStyle),
+      postBtnStyle: (cycle === 'Post' ? activeStyle : inactiveStyle),
+      setPre: this.setPre, setPost: this.setPost,
+      studentCountForGrade: students.length,
+      startEntry: this.startEntry, changeSetup: this.changeSetup, backToEntry: this.backToEntry, startNewSession: this.startNewSession,
+      studentIndex: idx,
+      studentOptionsVM: students.map((s, i) => ({ value: i, label: s.name })),
+      onStudentSelect: this.onStudentSelect, prevStudent: this.prevStudent, nextStudent: this.nextStudent,
+      answeredCount, totalCount,
+      progressBarStyle: `height:100%;background:oklch(55% 0.12 235);width:${pct}%;transition:width .2s`,
+      studentsInGradeCount, studentsEnteredCount,
+      clearStudent: this.clearStudent, saveEntry: this.saveEntry,
+      obsGroupedVM,
+      situationsVM, sjtSummaryVM,
+      groupedVM, summaryGroupedVM, overallAvgLabel,
+      showAvgCard: !isSjtMode,
+      showDomainSummary: !isSjtMode,
+      summarySubtitle: isSjtMode ? 'Distribution of chosen responses across students, per situation.' : (isObservationMode ? 'Averages across students with at least one score entered this session.' : 'Averages across students with at least one score entered this session.'),
+      trackedLabel: isObservationMode ? 'Rubric items tracked' : (isSjtMode ? 'Situations tracked' : 'Statements tracked'),
+    };
+  }
+}
+
+</script>
+</body>
+</html>

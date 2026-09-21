@@ -1,0 +1,132 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Goalkeep brand + Khoj-specific bracket/SJT tokens — see GOALKEEP BRAND
+     below for the raw values. Exposed here so bg-gk-*, bg-bracket-*,
+     bg-canvas, text-ink-secondary, border-subtle etc. become real Tailwind
+     utilities. */
+  --color-gk-ink: var(--gk-ink);
+  --color-gk-yellow: var(--gk-yellow);
+  --color-gk-coral: var(--gk-coral);
+  --color-gk-teal: var(--gk-teal);
+  --color-gk-blue: var(--gk-blue);
+  --color-gk-blue-deep: var(--gk-blue-deep);
+  --color-bg-canvas: var(--bg-canvas);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-border-subtle: var(--border-subtle);
+
+  /* Bracket scale (Below Basic/Basic/Proficient/Advanced) — shared by
+     Formative/Summative bracket-distribution charts and reused for SJT
+     answer options (A-D), per the design handoff's token-mapping note.
+     Named tokens, not inlined hex/oklch at each chart. */
+  --color-bracket-below: var(--bracket-below);
+  --color-bracket-basic: var(--bracket-basic);
+  --color-bracket-proficient: var(--bracket-proficient);
+  --color-bracket-advanced: var(--bracket-advanced);
+
+  /* SEL Thrive/Resist segment colors. */
+  --color-sel-thrive: var(--sel-thrive);
+  --color-sel-resist: var(--sel-resist);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  /* Literal, not derived from --radius — cards use a fixed 12px brand
+     constant independent of the button/input radius scale. */
+  --radius-card: 12px;
+}
+
+:root {
+  /* GOALKEEP BRAND primitives, ported verbatim from key-questions-interface's
+     src/app/globals.css. Keep these here and reference them from the
+     semantic tokens below rather than hardcoding hexes at call sites. */
+  --gk-ink: #313032;
+  --gk-yellow: #E9E626;
+  --gk-coral: #EA9D93;
+  --gk-teal: #81C2B2;
+  --gk-blue: #4E72B8;
+  --gk-blue-deep: #17479E;
+  --gk-white: #FFFFFF;
+
+  --utility-danger: #C23934;
+
+  --bg-canvas: #F7F6F6;
+  --bg-surface: var(--gk-white);
+  --ink-secondary: #5B6472;
+  --border-subtle: #E8E6E6;
+
+  --font-sans: var(--font-inter);
+  --font-heading: var(--font-inter);
+
+  --background: var(--bg-canvas);
+  --foreground: var(--gk-ink);
+  --card: var(--bg-surface);
+  --card-foreground: var(--gk-ink);
+  --popover: var(--bg-surface);
+  --popover-foreground: var(--gk-ink);
+  --primary: var(--gk-ink);
+  --primary-foreground: var(--gk-white);
+  --secondary: #efedec;
+  --secondary-foreground: var(--gk-ink);
+  --muted: #f0efee;
+  --muted-foreground: var(--ink-secondary);
+  --accent: #edebe9;
+  --accent-foreground: var(--gk-ink);
+  --destructive: var(--utility-danger);
+  --destructive-foreground: var(--gk-white);
+  --border: var(--border-subtle);
+  --input: var(--border-subtle);
+  --ring: var(--gk-blue-deep);
+
+  /* Bracket scale — cool-to-warm progression, distinct from the brand's
+     4 primary accents so it reads as its own scoring language. */
+  --bracket-below: #C23934;
+  --bracket-basic: var(--gk-coral);
+  --bracket-proficient: var(--gk-teal);
+  --bracket-advanced: var(--gk-blue-deep);
+
+  --sel-thrive: var(--gk-teal);
+  --sel-resist: var(--gk-coral);
+
+  /* 0.5rem (8px) — matches the button/input radius rule; Card's own 12px
+     comes from the separate literal --radius-card above. */
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
