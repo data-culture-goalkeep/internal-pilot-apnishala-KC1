@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -7,11 +7,11 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
-// Matches key-questions-interface's convention: Fraunces for display/hero
-// headings, used sparingly via the `font-display` utility — see
-// globals.css — not a blanket heading-font swap.
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+// Matches the design handoff mockup: Manrope for headings, the top-bar
+// wordmark, nav active state, and big stat/KPI numerics — Inter everywhere
+// else. See `--font-heading` in globals.css.
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${fraunces.variable} antialiased`}>{children}</body>
+      <body className={`${inter.variable} ${manrope.variable} antialiased`}>{children}</body>
     </html>
   );
 }

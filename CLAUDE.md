@@ -31,9 +31,11 @@ No auth in this pass — internal pilot, same posture as key-questions-interface
 
 ### Design tokens
 
-Goalkeep brand tokens ported from `key-questions-interface`'s `globals.css` (`--gk-ink/yellow/coral/teal/blue/blue-deep`, `--radius` 8px / `--radius-card` 12px). New tokens added for this app: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale, reused for SJT answer options A–D) and `--sel-thrive/resist`. Don't inline hex/oklch values at chart call sites — extend these tokens instead.
+Priority is visual fidelity to the design handoff mockup (`design_handoff_khoj_dashboard/*.dc.html`), not a strict remap onto Goalkeep's existing brand tokens — where the mockup's actual `oklch()` values differ from Goalkeep's palette (e.g. the gold/mustard accent, the bracket scale), the mockup wins and is kept as `oklch()` verbatim in `globals.css` (Tailwind v4 / evergreen browsers handle `oklch()` natively, so there's no lossy hex conversion). Goalkeep brand tokens (`--gk-ink/yellow/coral/teal/blue/blue-deep`) are still ported and still used in places that don't conflict with the mockup. `--radius` 8px / `--radius-card` 14px (mockup's card radius, not Goalkeep's 12px).
 
-`--font-display` (Fraunces, via `next/font/google` in `src/app/layout.tsx`) mirrors key-questions-interface's convention — reserved for select hero/H1 moments (currently just the Overview page's `<h1>`), not a blanket heading-font swap. Everything else stays on `--font-heading`/`--font-sans` (Inter).
+Khoj-specific tokens: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale — red/amber/light-green/deep-green per the mockup, reused verbatim for SJT answer options A–D — **not** `--gk-blue-deep`, that was a bug from an earlier pass), `--sel-thrive/resist`, `--accent-gold`/`--accent-gold-strong` (+ `-ink` variants — selected grade pill and primary buttons), `--nav-active-bg/ink/dot`, `--status-positive/negative/neutral`, `--alert-bg/border/ink` (threshold banners). Don't inline hex/oklch values at call sites — extend these tokens instead.
+
+`--font-heading` is **Manrope** (via `next/font/google` in `src/app/layout.tsx`), matching the mockup — used for headings, the top-bar wordmark, nav active state, and big stat/KPI numerics. `--font-sans` (Inter) is everything else. There is no separate display/serif font (an earlier pass added Fraunces for hero moments; removed — it didn't match the mockup, which uses Manrope for headings throughout, not a serif).
 
 ### Open items from the design handoff (see `design_handoff_khoj_dashboard/README.md`)
 

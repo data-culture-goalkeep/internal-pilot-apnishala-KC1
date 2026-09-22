@@ -224,7 +224,9 @@ function ToggleButton({
       onClick={onClick}
       className={cn(
         "rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-        active ? "border-gk-yellow bg-gk-yellow text-gk-ink" : "border-border bg-background text-muted-foreground hover:text-foreground"
+        active
+          ? "border-accent-gold bg-accent-gold text-accent-gold-ink"
+          : "border-border bg-background text-muted-foreground hover:text-foreground"
       )}
     >
       {children}

@@ -8,7 +8,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-heading: var(--font-heading);
-  --font-display: var(--font-fraunces);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -41,6 +40,26 @@
   --color-ink-secondary: var(--ink-secondary);
   --color-border-subtle: var(--border-subtle);
 
+  /* Mockup's gold/mustard accent — selected grade pill, primary CTA
+     buttons, active nav item. Deliberately not the same as --gk-yellow
+     (much brighter/greener); matches the design handoff prototype's
+     oklch() values verbatim rather than the Goalkeep brand yellow. */
+  --color-accent-gold: var(--accent-gold);
+  --color-accent-gold-ink: var(--accent-gold-ink);
+  --color-accent-gold-strong: var(--accent-gold-strong);
+  --color-accent-gold-strong-ink: var(--accent-gold-strong-ink);
+  --color-nav-active-bg: var(--nav-active-bg);
+  --color-nav-active-ink: var(--nav-active-ink);
+  --color-nav-active-dot: var(--nav-active-dot);
+
+  --color-status-positive: var(--status-positive);
+  --color-status-negative: var(--status-negative);
+  --color-status-neutral: var(--status-neutral);
+
+  --color-alert-bg: var(--alert-bg);
+  --color-alert-border: var(--alert-border);
+  --color-alert-ink: var(--alert-ink);
+
   /* Bracket scale (Below Basic/Basic/Proficient/Advanced) — shared by
      Formative/Summative bracket-distribution charts and reused for SJT
      answer options (A-D), per the design handoff's token-mapping note.
@@ -58,9 +77,10 @@
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
-  /* Literal, not derived from --radius — cards use a fixed 12px brand
-     constant independent of the button/input radius scale. */
-  --radius-card: 12px;
+  /* Literal, not derived from --radius — cards use a fixed 14px constant
+     (matching the design handoff mockup) independent of the button/input
+     radius scale. */
+  --radius-card: 14px;
 }
 
 :root {
@@ -83,7 +103,26 @@
   --border-subtle: #E8E6E6;
 
   --font-sans: var(--font-inter);
-  --font-heading: var(--font-inter);
+  --font-heading: var(--font-manrope);
+
+  /* Mockup's gold/mustard accent, kept as oklch() verbatim from the design
+     handoff prototype (Tailwind v4 / evergreen browsers handle oklch()
+     natively, so there's no need to lossy-convert to hex). */
+  --accent-gold: oklch(80% 0.16 92);
+  --accent-gold-ink: oklch(24% 0.03 90);
+  --accent-gold-strong: oklch(78% 0.17 90);
+  --accent-gold-strong-ink: oklch(22% 0.03 90);
+  --nav-active-bg: oklch(92% 0.09 92);
+  --nav-active-ink: oklch(32% 0.06 85);
+  --nav-active-dot: oklch(70% 0.16 92);
+
+  --status-positive: oklch(58% 0.12 155);
+  --status-negative: oklch(56% 0.17 20);
+  --status-neutral: oklch(80% 0.01 250);
+
+  --alert-bg: oklch(95% 0.045 55);
+  --alert-border: oklch(80% 0.09 55);
+  --alert-ink: oklch(38% 0.08 55);
 
   --background: var(--bg-canvas);
   --foreground: var(--gk-ink);
@@ -105,12 +144,15 @@
   --input: var(--border-subtle);
   --ring: var(--gk-blue-deep);
 
-  /* Bracket scale — cool-to-warm progression, distinct from the brand's
-     4 primary accents so it reads as its own scoring language. */
-  --bracket-below: #C23934;
-  --bracket-basic: var(--gk-coral);
-  --bracket-proficient: var(--gk-teal);
-  --bracket-advanced: var(--gk-blue-deep);
+  /* Bracket scale (Below Basic/Basic/Proficient/Advanced), matching the
+     design handoff mockup's array verbatim: red -> amber -> light green ->
+     deep green. Also reused as-is for SJT answer options A-D. Previously
+     --bracket-advanced was mapped to --gk-blue-deep (navy) — that was a
+     bug, not a style choice: the mockup never uses blue in this scale. */
+  --bracket-below: oklch(56% 0.17 20);
+  --bracket-basic: oklch(70% 0.13 55);
+  --bracket-proficient: oklch(75% 0.09 155);
+  --bracket-advanced: oklch(58% 0.12 155);
 
   --sel-thrive: var(--gk-teal);
   --sel-resist: var(--gk-coral);
