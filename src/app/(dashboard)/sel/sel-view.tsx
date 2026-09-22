@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "@/components/ui/table";
 import { HorizontalStackedBar } from "@/components/charts/horizontal-stacked-bar";
 import { BarChart } from "@/components/charts/bar-chart";
 import { ProgressBar } from "@/components/charts/progress-bar";
@@ -46,6 +47,8 @@ function SelContent({ data }: { data: KhojData }) {
     );
     return { label: d.name, value: row?.score_pct ?? 0 };
   });
+
+  const recentSelResponses = data.selResponses.filter((r) => !grade || r.grade_id === grade.id).slice(0, 8);
 
   const responseDistribution = data.sjtSituations.map((situ) => {
     const row = data.sjtResponses.find((r) => r.situation_id === situ.id && r.grade_id === (isAll ? null : sjtGradeId));
@@ -180,6 +183,57 @@ function SelContent({ data }: { data: KhojData }) {
           </Card>
         </>
       )}
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recently added</CardTitle>
+          <CardDescription>Edit a student&apos;s Observation, SJT, or Student Response entry.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentSelResponses.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No SEL entries logged yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  {isAll && <TableHead>Grade</TableHead>}
+                  <TableHead>Type</TableHead>
+                  <TableHead>Cycle</TableHead>
+                  <TableHead>Updated</TableHead>
+                  <TableHead />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recentSelResponses.map((r) => {
+                  const stu = data.students.find((s) => s.id === r.student_id);
+                  const stuGrade = data.grades.find((g) => g.id === r.grade_id);
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell>{stu?.name ?? "—"}</TableCell>
+                      {isAll && <TableCell>{stuGrade?.label ?? "—"}</TableCell>}
+                      <TableCell className="capitalize">{r.assessment_type.replace("_", " ")}</TableCell>
+                      <TableCell>{r.cycle_label}</TableCell>
+                      <TableCell>{new Date(r.updated_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-right">
+                        {stuGrade && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <Link
+                              href={`/sel/new?grade=${stuGrade.code}&studentId=${r.student_id}&cycleLabel=${encodeURIComponent(r.cycle_label)}&type=${r.assessment_type}`}
+                            >
+                              Edit
+                            </Link>
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

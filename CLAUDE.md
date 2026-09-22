@@ -20,7 +20,11 @@ No auth in this pass — internal pilot, same posture as key-questions-interface
 
 **Mutations**: server actions in `src/lib/khoj/actions.ts` (`"use server"`), using the service-role client (`src/lib/supabase/admin.ts`) — no RLS boundary in this pass, so these are the only write path. Callers `await refresh()` from `useKhojData()` after a mutation.
 
-**Charts**: hand-rolled CSS bar/stacked-bar/progress components in `src/components/charts/` (no charting library) — themed via the bracket/SEL chart tokens in `globals.css`, not inline hex values.
+**Charts**: hand-rolled CSS bar/stacked-bar/progress components in `src/components/charts/` (no charting library) — themed via the bracket/SEL chart tokens in `globals.css`, not inline hex values. `BarChart` (the plain vertical one) always labels each bar with its numeric value above it — a fixed `LABEL_RESERVED_PX` slice of the chart's height is reserved for that label so it never overflows the bar area.
+
+**Student sort order**: every data-entry surface that lists students (score entry, take-attendance roster, SEL Assessment Form roster) offers a Roll no./Name sort toggle rather than a fixed order — implemented once via `sortStudents()`/`StudentSortBy` in `src/lib/khoj/scope.ts`, not reimplemented per screen. Roll numbers are zero-padded text, so the sort compares them with `numeric: true`, not a plain string sort.
+
+**Score-entry validation**: `ScoreEntryDialog` (`src/app/(dashboard)/assessment-flow-dialogs.tsx`) clamps every score input to `[0, objective.max_marks]` on change (and again defensively before the save call) — the HTML `max` attribute alone doesn't stop a value being typed or pasted in. Objective label fields in `ConfigureAssessmentDialog` are mandatory: the "Create & enter scores" button stays disabled while any added row has a blank label.
 
 ### Supabase specifics
 
@@ -36,6 +40,10 @@ Priority is visual fidelity to the design handoff mockup (`design_handoff_khoj_d
 Khoj-specific tokens: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale — red/amber/light-green/deep-green per the mockup, reused verbatim for SJT answer options A–D — **not** `--gk-blue-deep`, that was a bug from an earlier pass), `--sel-thrive/resist`, `--accent-gold`/`--accent-gold-strong` (+ `-ink` variants — selected grade pill and primary buttons), `--nav-active-bg/ink/dot`, `--status-positive/negative/neutral`, `--alert-bg/border/ink` (threshold banners). Don't inline hex/oklch values at call sites — extend these tokens instead.
 
 `--font-heading` is **Manrope** (via `next/font/google` in `src/app/layout.tsx`), matching the mockup — used for headings, the top-bar wordmark, nav active state, and big stat/KPI numerics. `--font-sans` (Inter) is everything else. There is no separate display/serif font (an earlier pass added Fraunces for hero moments; removed — it didn't match the mockup, which uses Manrope for headings throughout, not a serif).
+
+### SEL Assessment Form — editing an existing entry
+
+The SEL & Holistic view (`src/app/(dashboard)/sel/sel-view.tsx`) has a "Recently added" table (reads `KhojData.selResponses`, fetched in `khoj-data.ts`) whose Edit action links to `/sel/new?grade=<code>&studentId=<id>&cycleLabel=<cycle>&type=<assessment_type>`. When `sel-assessment-form.tsx` sees those three params, it skips straight to the `entry` step for that student/cycle/type and pre-fills the form from the matching `sel_responses.payload` row, instead of the normal setup → roster → entry flow. Keep this deep-link contract in mind before changing either file's query-param names.
 
 ### Open items from the design handoff (see `design_handoff_khoj_dashboard/README.md`)
 

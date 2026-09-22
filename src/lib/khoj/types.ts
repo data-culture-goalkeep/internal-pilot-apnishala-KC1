@@ -283,6 +283,7 @@ export type KhojData = {
   sjtResponses: SjtResponse[];
   sjtCompetencyScores: SjtCompetencyScore[];
   sjtCoverage: SjtCoverage[];
+  selResponses: SelResponse[];
   studentGrowth: StudentGrowth[];
   actionQueue: ActionQueueItem[];
   bracketMovement: BracketMovement[];

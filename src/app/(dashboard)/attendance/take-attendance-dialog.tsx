@@ -12,7 +12,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { submitAttendanceRoster } from "@/lib/khoj/actions";
+import { sortStudents, type StudentSortBy } from "@/lib/khoj/scope";
 import type { Grade, Student } from "@/lib/khoj/types";
+
+function SortToggle({ value, onChange }: { value: StudentSortBy; onChange: (v: StudentSortBy) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1 text-xs">
+      <span className="text-muted-foreground">Sort by</span>
+      {(["roll", "name"] as const).map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={cn(
+            "rounded-md border px-2 py-1 font-medium",
+            value === opt ? "border-accent-gold-strong bg-accent-gold-strong/15 text-accent-gold-strong-ink" : "border-border text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {opt === "roll" ? "Roll no." : "Name"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function TakeAttendanceDialog({
   open,
@@ -30,6 +52,7 @@ export function TakeAttendanceDialog({
   const [date, setDate] = React.useState(() => new Date().toISOString().slice(0, 10));
   const [present, setPresent] = React.useState<Record<string, boolean>>({});
   const [pending, setPending] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState<StudentSortBy>("roll");
 
   // Reset the roster synchronously on the closed->open transition (React's
   // recommended "adjust state when a prop changes" pattern, using state
@@ -43,7 +66,7 @@ export function TakeAttendanceDialog({
     setPresent(Object.fromEntries(students.map((s) => [s.id, true])));
   }
 
-  const roster = React.useMemo(() => [...students].sort((a, b) => a.name.localeCompare(b.name)), [students]);
+  const roster = React.useMemo(() => sortStudents(students, sortBy), [students, sortBy]);
 
   async function handleSubmit() {
     setPending(true);
@@ -67,10 +90,13 @@ export function TakeAttendanceDialog({
           <DialogTitle>Take attendance — Grade {grade.label}</DialogTitle>
         </DialogHeader>
         <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1.5 text-sm font-semibold">
-            Date
-            <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-fit" />
-          </label>
+          <div className="flex items-end justify-between gap-3">
+            <label className="flex flex-col gap-1.5 text-sm font-semibold">
+              Date
+              <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="w-fit" />
+            </label>
+            <SortToggle value={sortBy} onChange={setSortBy} />
+          </div>
           <div className="flex gap-2">
             <Button
               type="button"

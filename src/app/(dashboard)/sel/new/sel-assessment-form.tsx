@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { KhojDataGate } from "@/lib/khoj/khoj-data-gate";
 import { saveSelResponse } from "@/lib/khoj/actions";
+import { sortStudents, type StudentSortBy } from "@/lib/khoj/scope";
 import { isSjtEligible, observationBandForGrade } from "@/lib/khoj/types";
 import type { KhojData, SelAssessmentType, SelObservationItem, SelResponseItem, SjtSituation, Student } from "@/lib/khoj/types";
 import { cn } from "@/lib/utils";
@@ -25,13 +26,31 @@ function FormContent({ data }: { data: KhojData }) {
   const searchParams = useSearchParams();
   const initialGradeCode = searchParams.get("grade") ?? undefined;
 
-  const [step, setStep] = React.useState<Step>("setup");
-  const [gradeCode, setGradeCode] = React.useState(initialGradeCode ?? data.grades[0]?.code ?? "");
-  const [selectedAssessmentType, setAssessmentType] = React.useState<SelAssessmentType>("observation");
-  const [cycle, setCycle] = React.useState(CYCLES[0]);
-  const [activeStudent, setActiveStudent] = React.useState<Student | null>(null);
+  // "Recently added" on the SEL & Holistic page links here with
+  // studentId/cycleLabel/type to jump straight into that entry pre-filled,
+  // skipping setup/roster — read once on mount, page doesn't need to react
+  // to further param changes.
+  const editStudentId = searchParams.get("studentId");
+  const editCycleLabel = searchParams.get("cycleLabel");
+  const editType = searchParams.get("type") as SelAssessmentType | null;
+  const editStudent = editStudentId ? data.students.find((s) => s.id === editStudentId) : undefined;
+  const editGrade = editStudent ? data.grades.find((g) => g.id === editStudent.grade_id) : undefined;
+  const isEditMode = !!(editStudent && editGrade && editCycleLabel && editType);
+
+  const [step, setStep] = React.useState<Step>(isEditMode ? "entry" : "setup");
+  const [gradeCode, setGradeCode] = React.useState(editGrade?.code ?? initialGradeCode ?? data.grades[0]?.code ?? "");
+  const [selectedAssessmentType, setAssessmentType] = React.useState<SelAssessmentType>(editType ?? "observation");
+  const [cycle, setCycle] = React.useState(editCycleLabel ?? CYCLES[0]);
+  const [activeStudent, setActiveStudent] = React.useState<Student | null>(editStudent ?? null);
   const [savedIds, setSavedIds] = React.useState<Set<string>>(new Set());
   const [toast, setToast] = React.useState<string | null>(null);
+  const [sortBy, setSortBy] = React.useState<StudentSortBy>("roll");
+
+  const editingResponse = isEditMode
+    ? data.selResponses.find(
+        (r) => r.student_id === editStudent!.id && r.grade_id === editGrade!.id && r.cycle_label === editCycleLabel && r.assessment_type === editType
+      )
+    : undefined;
 
   const grade = data.grades.find((g) => g.code === gradeCode);
   const eligible = grade ? isSjtEligible(grade.code) : false;
@@ -47,7 +66,7 @@ function FormContent({ data }: { data: KhojData }) {
     }
   }, [toast]);
 
-  const roster = grade ? data.students.filter((s) => s.grade_id === grade.id) : [];
+  const roster = grade ? sortStudents(data.students.filter((s) => s.grade_id === grade.id), sortBy) : [];
 
   function openStudent(student: Student) {
     setActiveStudent(student);
@@ -145,10 +164,11 @@ function FormContent({ data }: { data: KhojData }) {
 
       {step === "roster" && grade && (
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle>
               {grade.label} roster — {cycle} · {assessmentType.replace("_", " ")}
             </CardTitle>
+            <SortToggle value={sortBy} onChange={setSortBy} />
           </CardHeader>
           <CardContent className="flex flex-col divide-y divide-border p-0">
             {roster.map((s) => (
@@ -177,6 +197,7 @@ function FormContent({ data }: { data: KhojData }) {
           student={activeStudent}
           grade={grade}
           assessmentType={assessmentType}
+          initialAnswers={editingResponse?.payload}
           onBack={() => setStep("roster")}
           onSave={handleSave}
         />
@@ -240,6 +261,19 @@ function RatingButtons({ value, onChange }: { value: number | undefined; onChang
   );
 }
 
+function SortToggle({ value, onChange }: { value: StudentSortBy; onChange: (v: StudentSortBy) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1 text-xs">
+      <span className="text-muted-foreground">Sort by</span>
+      {(["roll", "name"] as const).map((opt) => (
+        <ToggleButton key={opt} active={value === opt} onClick={() => onChange(opt)}>
+          {opt === "roll" ? "Roll no." : "Name"}
+        </ToggleButton>
+      ))}
+    </div>
+  );
+}
+
 function LangToggle({ lang, onChange }: { lang: Lang; onChange: (l: Lang) => void }) {
   return (
     <div className="flex shrink-0 gap-1">
@@ -271,6 +305,7 @@ function EntryStep({
   student,
   grade,
   assessmentType,
+  initialAnswers,
   onBack,
   onSave,
 }: {
@@ -278,6 +313,7 @@ function EntryStep({
   student: Student;
   grade: KhojData["grades"][number];
   assessmentType: SelAssessmentType;
+  initialAnswers?: Record<string, unknown>;
   onBack: () => void;
   onSave: (payload: Record<string, unknown>) => Promise<void>;
 }) {
@@ -292,18 +328,48 @@ function EntryStep({
   if (assessmentType === "observation") {
     const band = observationBandForGrade(grade.code);
     const items = data.selObservationItems.filter((i) => i.band === band);
-    return <ObservationEntry items={items} domains={data.selDomains} student={student} onBack={onBack} onSubmit={submit} pending={pending} />;
+    return (
+      <ObservationEntry
+        items={items}
+        domains={data.selDomains}
+        student={student}
+        initialAnswers={initialAnswers as Record<string, number> | undefined}
+        onBack={onBack}
+        onSubmit={submit}
+        pending={pending}
+      />
+    );
   }
   if (assessmentType === "sjt") {
-    return <SjtEntry situations={data.sjtSituations} student={student} onBack={onBack} onSubmit={submit} pending={pending} />;
+    return (
+      <SjtEntry
+        situations={data.sjtSituations}
+        student={student}
+        initialAnswers={initialAnswers as Record<string, "A" | "B" | "C" | "D"> | undefined}
+        onBack={onBack}
+        onSubmit={submit}
+        pending={pending}
+      />
+    );
   }
-  return <StudentResponseEntry items={data.selResponseItems} domains={data.selDomains} student={student} onBack={onBack} onSubmit={submit} pending={pending} />;
+  return (
+    <StudentResponseEntry
+      items={data.selResponseItems}
+      domains={data.selDomains}
+      student={student}
+      initialAnswers={initialAnswers as Record<string, number> | undefined}
+      onBack={onBack}
+      onSubmit={submit}
+      pending={pending}
+    />
+  );
 }
 
 function ObservationEntry({
   items,
   domains,
   student,
+  initialAnswers,
   onBack,
   onSubmit,
   pending,
@@ -311,11 +377,12 @@ function ObservationEntry({
   items: SelObservationItem[];
   domains: KhojData["selDomains"];
   student: Student;
+  initialAnswers?: Record<string, number>;
   onBack: () => void;
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   pending: boolean;
 }) {
-  const [answers, setAnswers] = React.useState<Record<string, number>>({});
+  const [answers, setAnswers] = React.useState<Record<string, number>>(initialAnswers ?? {});
   const complete = items.every((i) => answers[i.id] != null);
   const groups = groupByDomain(items, domains);
   let counter = 0;
@@ -365,17 +432,19 @@ function ObservationEntry({
 function SjtEntry({
   situations,
   student,
+  initialAnswers,
   onBack,
   onSubmit,
   pending,
 }: {
   situations: SjtSituation[];
   student: Student;
+  initialAnswers?: Record<string, "A" | "B" | "C" | "D">;
   onBack: () => void;
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   pending: boolean;
 }) {
-  const [answers, setAnswers] = React.useState<Record<string, "A" | "B" | "C" | "D">>({});
+  const [answers, setAnswers] = React.useState<Record<string, "A" | "B" | "C" | "D">>(initialAnswers ?? {});
   const [lang, setLang] = React.useState<Lang>("en");
   const complete = situations.every((s) => answers[s.id]);
   const letters = ["A", "B", "C", "D"] as const;
@@ -441,6 +510,7 @@ function StudentResponseEntry({
   items,
   domains,
   student,
+  initialAnswers,
   onBack,
   onSubmit,
   pending,
@@ -448,11 +518,12 @@ function StudentResponseEntry({
   items: SelResponseItem[];
   domains: KhojData["selDomains"];
   student: Student;
+  initialAnswers?: Record<string, number>;
   onBack: () => void;
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   pending: boolean;
 }) {
-  const [answers, setAnswers] = React.useState<Record<string, number>>({});
+  const [answers, setAnswers] = React.useState<Record<string, number>>(initialAnswers ?? {});
   const [lang, setLang] = React.useState<Lang>("en");
   const complete = items.every((i) => answers[i.id] != null);
   const groups = groupByDomain(items, domains);

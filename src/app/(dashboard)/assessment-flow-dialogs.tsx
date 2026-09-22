@@ -17,11 +17,34 @@ import {
   getAssessmentScores,
   saveAssessmentScores,
 } from "@/lib/khoj/actions";
+import { sortStudents, type StudentSortBy } from "@/lib/khoj/scope";
 import type { Assessment, AssessmentObjective, AssessmentScore, ObjectiveCategory, Student } from "@/lib/khoj/types";
+import { cn } from "@/lib/utils";
 
 const SUBJECTS = ["Math", "Language", "EVS"];
 
 type DraftObjective = { text: string; maxMarks: number };
+
+function SortToggle({ value, onChange }: { value: StudentSortBy; onChange: (v: StudentSortBy) => void }) {
+  return (
+    <div className="flex shrink-0 items-center gap-1 text-xs">
+      <span className="text-muted-foreground">Sort by</span>
+      {(["roll", "name"] as const).map((opt) => (
+        <button
+          key={opt}
+          type="button"
+          onClick={() => onChange(opt)}
+          className={cn(
+            "rounded-md border px-2 py-1 font-medium",
+            value === opt ? "border-accent-gold-strong bg-accent-gold-strong/15 text-accent-gold-strong-ink" : "border-border text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {opt === "roll" ? "Roll no." : "Name"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 function ObjectiveRows({
   rows,
@@ -41,9 +64,10 @@ function ObjectiveRows({
       {rows.map((row, i) => (
         <div key={i} className="flex items-center gap-2">
           <Input
-            className="flex-1"
+            className={cn("flex-1", !row.text.trim() && "border-destructive/60")}
             placeholder={placeholder}
             value={row.text}
+            required
             onChange={(e) => {
               const next = [...rows];
               next[i] = { ...next[i], text: e.target.value };
@@ -123,15 +147,22 @@ export function ConfigureAssessmentDialog({
   const [writtenRows, setWrittenRows] = React.useState<DraftObjective[]>([{ text: "", maxMarks: 5 }]);
   const [pending, setPending] = React.useState(false);
 
+  // Every objective row that exists must have a label — no silently
+  // dropping blank rows on submit. At least one objective is required.
+  const activeRows = kind === "formative" ? formativeRows : [...oralRows, ...writtenRows];
+  const hasBlankRow = activeRows.some((r) => !r.text.trim());
+  const canSubmit = activeRows.length > 0 && !hasBlankRow;
+
   async function handleSubmit() {
+    if (!canSubmit) return;
     setPending(true);
     try {
       const objectives: { text: string; maxMarks: number; category: ObjectiveCategory | null }[] =
         kind === "formative"
-          ? formativeRows.filter((r) => r.text.trim()).map((r) => ({ ...r, category: null }))
+          ? formativeRows.map((r) => ({ ...r, category: null }))
           : [
-              ...oralRows.filter((r) => r.text.trim()).map((r) => ({ ...r, category: "oral" as const })),
-              ...writtenRows.filter((r) => r.text.trim()).map((r) => ({ ...r, category: "written" as const })),
+              ...oralRows.map((r) => ({ ...r, category: "oral" as const })),
+              ...writtenRows.map((r) => ({ ...r, category: "written" as const })),
             ];
 
       const { assessment, objectives: created } = await createAssessmentWithObjectives({
@@ -214,13 +245,16 @@ export function ConfigureAssessmentDialog({
             </div>
           )}
         </div>
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button type="button" disabled={pending} onClick={handleSubmit}>
-            {pending ? "Creating…" : "Create & enter scores →"}
-          </Button>
+        <DialogFooter className="items-center sm:justify-between">
+          {hasBlankRow && <p className="text-xs text-destructive">Every objective needs a label.</p>}
+          <div className="flex gap-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="button" disabled={pending || !canSubmit} onClick={handleSubmit}>
+              {pending ? "Creating…" : "Create & enter scores →"}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -244,6 +278,7 @@ export function ScoreEntryDialog({
 }) {
   const [draft, setDraft] = React.useState<Record<string, string>>({});
   const [pending, setPending] = React.useState(false);
+  const [sortBy, setSortBy] = React.useState<StudentSortBy>("roll");
 
   React.useEffect(() => {
     if (!open || !assessment) return;
@@ -255,9 +290,22 @@ export function ScoreEntryDialog({
   }, [open, assessment]);
 
   const rosterStudents = React.useMemo(
-    () => (assessment ? [...students].filter((s) => s.grade_id === assessment.grade_id).sort((a, b) => a.name.localeCompare(b.name)) : []),
-    [students, assessment]
+    () => (assessment ? sortStudents(students.filter((s) => s.grade_id === assessment.grade_id), sortBy) : []),
+    [students, assessment, sortBy]
   );
+
+  const maxMarksByObjective = React.useMemo(() => new Map(objectives.map((o) => [o.id, o.max_marks])), [objectives]);
+
+  function clampScore(key: string, raw: string) {
+    if (raw === "") {
+      setDraft((d) => ({ ...d, [key]: "" }));
+      return;
+    }
+    const max = maxMarksByObjective.get(key.split(":")[0]) ?? Infinity;
+    const n = Number(raw);
+    const clamped = Number.isNaN(n) ? raw : String(Math.min(Math.max(n, 0), max));
+    setDraft((d) => ({ ...d, [key]: clamped }));
+  }
 
   async function handleSave() {
     if (!assessment) return;
@@ -267,7 +315,8 @@ export function ScoreEntryDialog({
         .filter(([, v]) => v !== "")
         .map(([key, v]) => {
           const [objectiveId, studentId] = key.split(":");
-          return { objectiveId, studentId, score: Number(v) };
+          const max = maxMarksByObjective.get(objectiveId) ?? Infinity;
+          return { objectiveId, studentId, score: Math.min(Math.max(Number(v), 0), max) };
         });
       await saveAssessmentScores(assessment.id, entries);
       await onSaved();
@@ -282,11 +331,14 @@ export function ScoreEntryDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Enter scores — {assessment.subject}</DialogTitle>
-          <DialogDescription>
-            {new Date(assessment.assessment_date).toLocaleDateString()} · {assessment.round_label}
-          </DialogDescription>
+        <DialogHeader className="flex-row items-start justify-between space-y-0">
+          <div>
+            <DialogTitle>Enter scores — {assessment.subject}</DialogTitle>
+            <DialogDescription>
+              {new Date(assessment.assessment_date).toLocaleDateString()} · {assessment.round_label}
+            </DialogDescription>
+          </div>
+          <SortToggle value={sortBy} onChange={setSortBy} />
         </DialogHeader>
         {rosterStudents.length === 0 ? (
           <p className="text-sm text-muted-foreground">No students enrolled in this grade yet.</p>
@@ -320,7 +372,7 @@ export function ScoreEntryDialog({
                             max={o.max_marks}
                             className="h-8 w-20"
                             value={draft[key] ?? ""}
-                            onChange={(e) => setDraft((d) => ({ ...d, [key]: e.target.value }))}
+                            onChange={(e) => clampScore(key, e.target.value)}
                           />
                         </td>
                       );
