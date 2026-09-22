@@ -41,6 +41,16 @@ const SJT_SITUATIONS = [
 ];
 const FIRST_NAMES = ["Aarav", "Diya", "Vihaan", "Ananya", "Ishaan", "Myra", "Kabir", "Saanvi", "Arjun", "Riya", "Reyansh", "Aadhya", "Vivaan", "Anika", "Shaurya"];
 const LAST_NAMES = ["Sharma", "Patel", "Kumar", "Singh", "Gupta", "Rao", "Nair", "Mehta", "Joshi", "Verma"];
+const SECTIONS = ["A", "B", "C", "D", "E", "F", "G", "H", "I"];
+const SOCIAL_CATEGORIES = ["General", "OBC", "SC", "ST", "EWS"];
+const MINORITY_GROUPS = ["None", "None", "None", "Muslim", "Christian", "Sikh", "Buddhist", "Other"];
+const IMPAIRMENT_TYPES = ["Visual", "Hearing", "Locomotor", "Speech and language"];
+
+function chunk<T>(arr: T[], size: number): T[][] {
+  const out: T[][] = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
 
 function pick<T>(arr: readonly T[], seed: number) {
   return arr[seed % arr.length];
@@ -79,11 +89,27 @@ async function main() {
     const count = 30 + (s % 15);
     for (let i = 0; i < count; i++) {
       s++;
+      const isCwsn = s % 20 === 0;
       studentRows.push({
         grade_id: g.id,
         roll_no: String(i + 1).padStart(2, "0"),
         name: `${pick(FIRST_NAMES, s)} ${pick(LAST_NAMES, s + 3)}`,
         gender: s % 2 === 0 ? "M" : "F",
+        date_of_birth: `${2008 + (s % 12)}-${String((s % 12) + 1).padStart(2, "0")}-${String((s % 27) + 1).padStart(2, "0")}`,
+        section: pick(SECTIONS, s),
+        father_name: `${pick(FIRST_NAMES, s + 5)} ${pick(LAST_NAMES, s)}`,
+        mother_name: `${pick(FIRST_NAMES, s + 8)} ${pick(LAST_NAMES, s)}`,
+        social_category: pick(SOCIAL_CATEGORIES, s),
+        minority_group: pick(MINORITY_GROUPS, s),
+        bpl_beneficiary: s % 9 === 0,
+        cwsn: isCwsn,
+        impairment_type: isCwsn ? pick(IMPAIRMENT_TYPES, s) : null,
+        repeater_this_year: s % 25 === 0,
+        student_pen: `PEN${String(100000 + s)}`,
+        aadhaar_number: `${String(s).padStart(4, "0")}${String(s * 7).padStart(4, "0")}${String(s * 13).padStart(4, "0")}`,
+        apaar_id: `APAAR${String(200000 + s)}`,
+        mobile_number: `9${String(800000000 + s * 37).slice(0, 9)}`,
+        address: `${(s % 40) + 1}, ${pick(LAST_NAMES, s)} Colony, Pune`,
       });
     }
   }
@@ -92,6 +118,17 @@ async function main() {
     .insert(studentRows)
     .select();
   if (studentsErr) throw studentsErr;
+
+  // Grade history: current year + previous 2 (mostly today's grade) -----
+  await supabase.from("student_grade_history").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  const AY_LABELS = ["AY 2026-27", "AY 2025-26", "AY 2024-25"];
+  const gradeHistoryRows = students!.flatMap((stu) =>
+    AY_LABELS.map((ay) => ({ student_id: stu.id, academic_year: ay, grade_id: stu.grade_id }))
+  );
+  for (const batch of chunk(gradeHistoryRows, 1000)) {
+    const { error } = await supabase.from("student_grade_history").insert(batch);
+    if (error) throw error;
+  }
 
   // Assessments (formative + summative) ---------------------------------
   await supabase.from("assessments").delete().neq("id", "00000000-0000-0000-0000-000000000000");
@@ -142,9 +179,42 @@ async function main() {
       });
     }
   }
+  let objectives: { id: string; assessment_id: string; max_marks: number }[] = [];
   if (objectiveRows.length) {
     await supabase.from("assessment_objectives").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-    const { error } = await supabase.from("assessment_objectives").insert(objectiveRows);
+    const { data, error } = await supabase.from("assessment_objectives").insert(objectiveRows).select();
+    if (error) throw error;
+    objectives = data!;
+  }
+
+  // Per-student, per-objective scores for those same formative assessments —
+  // gives the score-entry grid real data to show immediately.
+  await supabase.from("assessment_scores").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  const objectivesByAssessment = new Map<string, typeof objectives>();
+  for (const obj of objectives) {
+    const list = objectivesByAssessment.get(obj.assessment_id) ?? [];
+    list.push(obj);
+    objectivesByAssessment.set(obj.assessment_id, list);
+  }
+  const scoreRows: { assessment_id: string; objective_id: string; student_id: string; score: number }[] = [];
+  let sq = 0;
+  for (const asm of assessments!.filter((x) => x.kind === "formative" && x.round_label === "Round 2")) {
+    const objs = objectivesByAssessment.get(asm.id) ?? [];
+    const gradeStudents = students!.filter((stu) => stu.grade_id === asm.grade_id);
+    for (const stu of gradeStudents) {
+      for (const obj of objs) {
+        sq++;
+        scoreRows.push({
+          assessment_id: asm.id,
+          objective_id: obj.id,
+          student_id: stu.id,
+          score: Math.min(obj.max_marks, rand(2, obj.max_marks, sq)),
+        });
+      }
+    }
+  }
+  for (const batch of chunk(scoreRows, 1000)) {
+    const { error } = await supabase.from("assessment_scores").insert(batch);
     if (error) throw error;
   }
 
@@ -204,6 +274,25 @@ async function main() {
     }
   }
   await supabase.from("attendance_records").insert(attendanceRecordRows).then(({ error }) => { if (error) throw error; });
+
+  // Per-student daily roster — real backing data for "Take attendance" ------
+  await supabase.from("attendance_daily").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+  const attendanceDailyRows: { student_id: string; record_date: string; present: boolean }[] = [];
+  let ad = 0;
+  for (const stu of students!) {
+    for (let d = 1; d <= 5; d++) {
+      ad++;
+      attendanceDailyRows.push({
+        student_id: stu.id,
+        record_date: `2026-09-${String(d).padStart(2, "0")}`,
+        present: rand(0, 1, ad) > 0.12,
+      });
+    }
+  }
+  for (const batch of chunk(attendanceDailyRows, 1000)) {
+    const { error } = await supabase.from("attendance_daily").insert(batch);
+    if (error) throw error;
+  }
 
   const studentAttendanceRows: { student_id: string; month_label: string; attendance_pct: number; sort_order: number }[] = [];
   let sa = 0;
