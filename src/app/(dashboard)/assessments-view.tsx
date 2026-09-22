@@ -261,9 +261,13 @@ function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojDa
           gradeId={grade.id}
           gradeLabel={grade.label}
           roundLabel={latestRound}
-          onCreated={async (assessment, objectives) => {
-            await refresh();
+          onCreated={(assessment, objectives) => {
+            // Optimistic: open the score-entry grid immediately with the
+            // assessment/objectives just returned by the create call —
+            // don't wait on a full dashboard-data reload first, it's not
+            // needed to render this dialog.
             setScoreEntry({ assessment, objectives });
+            void refresh();
           }}
         />
       )}

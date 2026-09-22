@@ -75,19 +75,33 @@ function FormContent({ data }: { data: KhojData }) {
 
   async function handleSave(payload: Record<string, unknown>) {
     if (!activeStudent || !grade) return;
-    await saveSelResponse({
-      studentId: activeStudent.id,
-      gradeId: grade.id,
-      cycleLabel: cycle,
-      assessmentType,
-      payload,
-      submitted: true,
-    });
-    setSavedIds((prev) => new Set(prev).add(activeStudent.id));
+    const studentId = activeStudent.id;
+
+    // Optimistic: assume the save succeeds and update the UI immediately
+    // (roster badge, toast, back to roster) rather than waiting on the
+    // network round-trip — roll back and surface an error if it turns out
+    // to have failed.
+    setSavedIds((prev) => new Set(prev).add(studentId));
     setToast("Entry saved.");
-    // Straight back to the roster — no interim per-student summary screen —
-    // so the teacher can immediately pick the next student.
     setStep("roster");
+
+    try {
+      await saveSelResponse({
+        studentId,
+        gradeId: grade.id,
+        cycleLabel: cycle,
+        assessmentType,
+        payload,
+        submitted: true,
+      });
+    } catch {
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(studentId);
+        return next;
+      });
+      setToast("Couldn't save that entry — check your connection and try again.");
+    }
   }
 
   return (
@@ -197,7 +211,15 @@ function FormContent({ data }: { data: KhojData }) {
           student={activeStudent}
           grade={grade}
           assessmentType={assessmentType}
-          initialAnswers={editingResponse?.payload}
+          // Only prefill from the deep-linked response when the entry
+          // actually showing is that same student/cycle/type — otherwise a
+          // student opened afterwards from the roster would incorrectly
+          // inherit the edit-linked student's saved answers.
+          initialAnswers={
+            activeStudent.id === editStudent?.id && cycle === editCycleLabel && assessmentType === editType
+              ? editingResponse?.payload
+              : undefined
+          }
           onBack={() => setStep("roster")}
           onSave={handleSave}
         />

@@ -144,30 +144,32 @@ export async function saveAssessmentScores(
 ) {
   const supabase = createAdminClient();
 
-  const { error: upsertErr } = await supabase.from("assessment_scores").upsert(
-    entries.map((e) => ({
-      assessment_id: assessmentId,
-      objective_id: e.objectiveId,
-      student_id: e.studentId,
-      score: e.score,
-    })),
-    { onConflict: "objective_id,student_id" }
-  );
-  if (upsertErr) throw upsertErr;
-
   const { data: objectives, error: objErr } = await supabase
     .from("assessment_objectives")
     .select("*")
     .eq("assessment_id", assessmentId);
   if (objErr) throw objErr;
 
+  // Clamp server-side too — the UI already clamps on input, but this is
+  // the only write path, so a bad value must not reach the DB from here
+  // regardless of what the caller sent.
+  const maxMarksByObjective = new Map(objectives!.map((o) => [o.id, o.max_marks]));
+  const { error: upsertErr } = await supabase.from("assessment_scores").upsert(
+    entries.map((e) => ({
+      assessment_id: assessmentId,
+      objective_id: e.objectiveId,
+      student_id: e.studentId,
+      score: Math.min(Math.max(e.score, 0), maxMarksByObjective.get(e.objectiveId) ?? e.score),
+    })),
+    { onConflict: "objective_id,student_id" }
+  );
+  if (upsertErr) throw upsertErr;
+
   const { data: scores, error: scoresErr } = await supabase
     .from("assessment_scores")
     .select("*")
     .eq("assessment_id", assessmentId);
   if (scoresErr) throw scoresErr;
-
-  const maxMarksByObjective = new Map(objectives!.map((o) => [o.id, o.max_marks]));
   const scoresByStudent = new Map<string, number>();
   const maxByStudent = new Map<string, number>();
   for (const s of scores!) {

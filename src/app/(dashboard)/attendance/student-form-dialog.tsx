@@ -144,8 +144,11 @@ export function StudentFormDialog({
       } else {
         await enrollStudent(draft);
       }
-      await onSaved();
+      // Optimistic: close as soon as the write succeeds; the background
+      // views pick up the refreshed data once it lands rather than holding
+      // the dialog open for it.
       onOpenChange(false);
+      void onSaved();
     } finally {
       setPending(false);
     }

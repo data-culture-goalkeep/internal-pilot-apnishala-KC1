@@ -319,8 +319,12 @@ export function ScoreEntryDialog({
           return { objectiveId, studentId, score: Math.min(Math.max(Number(v), 0), max) };
         });
       await saveAssessmentScores(assessment.id, entries);
-      await onSaved();
+      // Optimistic: close the dialog as soon as the write itself succeeds,
+      // rather than also waiting on the full dashboard-data reload that
+      // follows — that reload updates the background views once it lands,
+      // but shouldn't hold the dialog open.
       onOpenChange(false);
+      void onSaved();
     } finally {
       setPending(false);
     }
