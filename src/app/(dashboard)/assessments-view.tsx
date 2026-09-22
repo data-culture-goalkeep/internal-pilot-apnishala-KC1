@@ -11,8 +11,8 @@ import { useKhojData } from "@/lib/khoj/khoj-data-provider";
 import { KhojDataGate } from "@/lib/khoj/khoj-data-gate";
 import { useGradeScope } from "@/lib/khoj/scope";
 import { deleteAssessment } from "@/lib/khoj/actions";
-import { NewAssessmentDialog } from "./new-assessment-dialog";
-import type { AssessmentKind, KhojData } from "@/lib/khoj/types";
+import { ConfigureAssessmentDialog, ScoreEntryDialog } from "./assessment-flow-dialogs";
+import type { Assessment, AssessmentKind, AssessmentObjective, KhojData } from "@/lib/khoj/types";
 import { BRACKET_LABELS } from "@/lib/khoj/types";
 
 const BRACKET_CLASSES = ["bg-bracket-below", "bg-bracket-basic", "bg-bracket-proficient", "bg-bracket-advanced"];
@@ -24,7 +24,8 @@ export function AssessmentsView({ kind }: { kind: AssessmentKind }) {
 function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojData }) {
   const { gradeCode, refresh } = useKhojData();
   const { grade, isAll } = useGradeScope(data, gradeCode);
-  const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [configureOpen, setConfigureOpen] = React.useState(false);
+  const [scoreEntry, setScoreEntry] = React.useState<{ assessment: Assessment; objectives: AssessmentObjective[] } | null>(null);
 
   const title = kind === "formative" ? "Formative Assessments" : "Summative Assessments";
   const rounds = kind === "formative" ? ["Round 1", "Round 2"] : ["Pre", "Post"];
@@ -97,7 +98,7 @@ function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojDa
           </p>
         </div>
         {grade ? (
-          <Button onClick={() => setDialogOpen(true)}>+ New assessment</Button>
+          <Button onClick={() => setConfigureOpen(true)}>+ New assessment</Button>
         ) : (
           <span className="max-w-56 text-right text-xs text-muted-foreground">
             Select a specific grade to add a new assessment.
@@ -148,7 +149,17 @@ function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojDa
                     previous round
                   </p>
                 )}
-                <Button variant="outline" size="sm" className="mt-1 w-fit">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-1 w-fit"
+                  onClick={() =>
+                    setScoreEntry({
+                      assessment: latestAssessment,
+                      objectives: data.objectives.filter((o) => o.assessment_id === latestAssessment.id),
+                    })
+                  }
+                >
                   Enter/edit scores
                 </Button>
               </div>
@@ -223,7 +234,14 @@ function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojDa
                   <TableCell>{a.subject}</TableCell>
                   <TableCell>{a.round_label}</TableCell>
                   <TableCell>{a.average_pct}%</TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="flex justify-end gap-1 text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setScoreEntry({ assessment: a, objectives: data.objectives.filter((o) => o.assessment_id === a.id) })}
+                    >
+                      Edit
+                    </Button>
                     <Button variant="ghost" size="sm" onClick={() => handleDelete(a.id)}>
                       Delete
                     </Button>
@@ -236,15 +254,27 @@ function AssessmentsContent({ kind, data }: { kind: AssessmentKind; data: KhojDa
       </Card>
 
       {grade && (
-        <NewAssessmentDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
+        <ConfigureAssessmentDialog
+          open={configureOpen}
+          onOpenChange={setConfigureOpen}
           kind={kind}
           gradeId={grade.id}
+          gradeLabel={grade.label}
           roundLabel={latestRound}
-          onSaved={refresh}
+          onCreated={async (assessment, objectives) => {
+            await refresh();
+            setScoreEntry({ assessment, objectives });
+          }}
         />
       )}
+      <ScoreEntryDialog
+        open={!!scoreEntry}
+        onOpenChange={(open) => !open && setScoreEntry(null)}
+        assessment={scoreEntry?.assessment ?? null}
+        objectives={scoreEntry?.objectives ?? []}
+        students={data.students}
+        onSaved={refresh}
+      />
     </div>
   );
 }

@@ -7,12 +7,37 @@ export type Grade = {
 
 export type Role = "teacher" | "leadership";
 
+export type SocialCategory = "General" | "OBC" | "SC" | "ST" | "EWS";
+export type MinorityGroup = "None" | "Muslim" | "Christian" | "Sikh" | "Buddhist" | "Other";
+
 export type Student = {
   id: string;
   grade_id: string;
   roll_no: string;
   name: string;
   gender: "M" | "F" | "Other";
+  date_of_birth: string | null;
+  section: string | null;
+  father_name: string | null;
+  mother_name: string | null;
+  social_category: SocialCategory;
+  minority_group: MinorityGroup;
+  bpl_beneficiary: boolean;
+  cwsn: boolean;
+  impairment_type: string | null;
+  repeater_this_year: boolean;
+  student_pen: string | null;
+  aadhaar_number: string | null;
+  apaar_id: string | null;
+  mobile_number: string | null;
+  address: string | null;
+};
+
+export type StudentGradeHistory = {
+  id: string;
+  student_id: string;
+  academic_year: string;
+  grade_id: string | null;
 };
 
 export type AssessmentKind = "formative" | "summative";
@@ -32,12 +57,23 @@ export type Assessment = {
   bracket_advanced_pct: number;
 };
 
+export type ObjectiveCategory = "oral" | "written";
+
 export type AssessmentObjective = {
   id: string;
   assessment_id: string;
   objective_text: string;
   max_marks: number;
   class_average: number;
+  category: ObjectiveCategory | null;
+};
+
+export type AssessmentScore = {
+  id: string;
+  assessment_id: string;
+  objective_id: string;
+  student_id: string;
+  score: number;
 };
 
 export type CoverageMonth = {
@@ -70,6 +106,13 @@ export type StudentAttendance = {
   month_label: string;
   attendance_pct: number;
   sort_order: number;
+};
+
+export type AttendanceDaily = {
+  id: string;
+  student_id: string;
+  record_date: string;
+  present: boolean;
 };
 
 export type AttendanceAlert = {
