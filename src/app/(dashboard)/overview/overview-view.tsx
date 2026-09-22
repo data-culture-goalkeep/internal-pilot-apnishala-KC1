@@ -61,7 +61,7 @@ function OverviewContent({ data }: { data: KhojData }) {
   return (
     <div className="flex flex-col gap-5">
       <div>
-        <h1 className="font-heading text-2xl font-semibold">
+        <h1 className="font-display text-2xl font-semibold">
           {isLeadership ? "Overview — School-wide" : `Overview — ${scopeLabel}`}
         </h1>
         <p className="text-sm text-muted-foreground">What needs attention today, and where the numbers stand.</p>

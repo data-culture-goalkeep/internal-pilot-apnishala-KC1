@@ -8,6 +8,10 @@ Khoj Dashboard — a school analytics app for teachers and leadership, built fro
 
 No auth in this pass — internal pilot, same posture as key-questions-interface's Mockup Navigator (public reads, service-role writes via server actions).
 
+## Git workflow
+
+`main` is the only long-lived branch and is the repo's default. All work happens on a `feature/*` branch, with a PR opened into `main` at the end of each round of work — never push directly to `main`. Claude never merges a PR itself; the repo owner merges, or explicitly tells Claude to. Note in each PR description whether it's expected to affect the Vercel preview/production deploy (e.g. env var changes, new routes).
+
 ## Architecture
 
 **Data cache**: `src/app/(dashboard)/layout.tsx` renders `<KhojDataProvider>` (`src/lib/khoj/khoj-data-provider.tsx`), which calls the single combined server action `getKhojData()` (`src/lib/khoj/khoj-data.ts`) on mount and caches the whole dataset in React context — every view reads from `useKhojData()` / `KhojDataGate` rather than issuing its own Supabase query. The full dataset for one school is small enough that this is simpler than key-questions-interface's `refresh()`/sequence-number machinery; if that changes, port the pattern.
@@ -29,12 +33,15 @@ No auth in this pass — internal pilot, same posture as key-questions-interface
 
 Goalkeep brand tokens ported from `key-questions-interface`'s `globals.css` (`--gk-ink/yellow/coral/teal/blue/blue-deep`, `--radius` 8px / `--radius-card` 12px). New tokens added for this app: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale, reused for SJT answer options A–D) and `--sel-thrive/resist`. Don't inline hex/oklch values at chart call sites — extend these tokens instead.
 
+`--font-display` (Fraunces, via `next/font/google` in `src/app/layout.tsx`) mirrors key-questions-interface's convention — reserved for select hero/H1 moments (currently just the Overview page's `<h1>`), not a blanket heading-font swap. Everything else stays on `--font-heading`/`--font-sans` (Inter).
+
 ### Open items from the design handoff (see `design_handoff_khoj_dashboard/README.md`)
 
 - SJT competency-map scoring/normalization is a placeholder (`sjt_competency_scores.score_pct` is a generic field) — real calculation is separate follow-up work, per product decision.
 - No confirm-on-delete for table row deletes yet (matches the prototype) — flagged as follow-up.
-- Logo: using an emoji placeholder in the top bar; the handoff's `uploads/apni-shala-logo-cc-01.png` vs. a Goalkeep-branded mark needs a client decision.
 - Leadership-role views for pages other than Overview weren't designed in the handoff — every other view currently shows the same content regardless of role.
+
+Resolved: the top bar uses the client's actual Apnishala logo (`public/apnishala-logo.png`), not a Goalkeep mark or placeholder.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
