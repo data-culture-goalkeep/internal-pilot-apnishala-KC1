@@ -159,7 +159,36 @@ export type SelScore = {
 
 export type SelDomain = { id: string; name: string; sort_order: number };
 
-export type SjtSituation = { id: string; title: string; sort_order: number };
+export type SjtSituation = {
+  id: string;
+  title: string;
+  sort_order: number;
+  story_en: string;
+  story_hi: string;
+  options_en: string[];
+  options_hi: string[];
+};
+
+export type ObservationBand = "k3" | "g4";
+
+export type SelObservationItem = {
+  id: string;
+  code: string;
+  band: ObservationBand;
+  domain_id: string;
+  title: string;
+  guidance: string | null;
+  sort_order: number;
+};
+
+export type SelResponseItem = {
+  id: string;
+  code: string;
+  domain_id: string;
+  statement_en: string;
+  statement_hi: string;
+  sort_order: number;
+};
 
 export type SjtResponse = {
   situation_id: string;
@@ -249,6 +278,8 @@ export type KhojData = {
   selScores: SelScore[];
   selDomains: SelDomain[];
   sjtSituations: SjtSituation[];
+  selObservationItems: SelObservationItem[];
+  selResponseItems: SelResponseItem[];
   sjtResponses: SjtResponse[];
   sjtCompetencyScores: SjtCompetencyScore[];
   sjtCoverage: SjtCoverage[];
@@ -261,12 +292,16 @@ export type KhojData = {
 
 export const BRACKET_LABELS = ["Below Basic", "Basic", "Proficient", "Advanced"] as const;
 
+/** The 5 CASEL-style domains used throughout the SEL Assessment Form
+ * (Observation + Student Response) and the SJT competency-map chart — per
+ * the actual design handoff mockup file, not the README's summary (which
+ * named a different, incorrect set of 5). */
 export const SEL_DOMAINS_TAXONOMY = [
-  "Collaboration",
-  "Emotional Regulation",
-  "Responsible Decision-Making",
-  "Self-Awareness",
-  "Self-Regulation",
+  "Self Awareness",
+  "Self Management",
+  "Social Awareness",
+  "Relationship Skills",
+  "Responsible Decision Making",
 ] as const;
 
 /** Grades 6-10 are the only ones eligible for SJT / Student Response, per
@@ -274,4 +309,13 @@ export const SEL_DOMAINS_TAXONOMY = [
 export function isSjtEligible(gradeCode: string) {
   const n = Number(gradeCode);
   return Number.isFinite(n) && n >= 6 && n <= 10;
+}
+
+/** Observation items are grade-band-specific: "k3" (LKG-3) has a shorter
+ * item set, "g4" (Grade 4-10) a longer one — per the mockup's ITEMS_K3 /
+ * ITEMS_G4. */
+export function observationBandForGrade(gradeCode: string): "k3" | "g4" {
+  if (gradeCode === "LKG" || gradeCode === "UKG") return "k3";
+  const n = Number(gradeCode);
+  return Number.isFinite(n) && n <= 3 ? "k3" : "g4";
 }
