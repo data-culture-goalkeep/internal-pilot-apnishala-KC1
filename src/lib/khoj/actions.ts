@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import type { ObjectiveCategory, SelAssessmentType, SocialCategory, MinorityGroup } from "./types";
+import type { ObjectiveCategory, SelAssessmentType, StudentFormInput } from "./types";
 
 /** Score -> bracket cutoffs. Not specified anywhere in the design handoff
  * (its bracket-distribution charts use placeholder/random data, not a real
@@ -238,30 +238,6 @@ export async function deleteAttendanceRecord(id: string) {
   const { error } = await supabase.from("attendance_records").delete().eq("id", id);
   if (error) throw error;
 }
-
-export type StudentFormInput = {
-  gradeId: string;
-  rollNo: string;
-  name: string;
-  gender: "M" | "F" | "Other";
-  dateOfBirth: string | null;
-  section: string | null;
-  fatherName: string | null;
-  motherName: string | null;
-  socialCategory: SocialCategory;
-  minorityGroup: MinorityGroup;
-  bplBeneficiary: boolean;
-  cwsn: boolean;
-  impairmentType: string | null;
-  repeaterThisYear: boolean;
-  studentPen: string | null;
-  aadhaarNumber: string | null;
-  apaarId: string | null;
-  mobileNumber: string | null;
-  address: string | null;
-  /** academic_year -> grade_id, for the Grade History sub-table. */
-  gradeHistory: Record<string, string | null>;
-};
 
 function studentRow(input: StudentFormInput) {
   return {

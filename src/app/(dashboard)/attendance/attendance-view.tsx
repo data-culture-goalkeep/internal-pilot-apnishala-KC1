@@ -10,7 +10,9 @@ import { useKhojData } from "@/lib/khoj/khoj-data-provider";
 import { KhojDataGate } from "@/lib/khoj/khoj-data-gate";
 import { useGradeScope } from "@/lib/khoj/scope";
 import { deleteAttendanceRecord } from "@/lib/khoj/actions";
-import type { KhojData } from "@/lib/khoj/types";
+import { StudentFormDialog } from "./student-form-dialog";
+import { TakeAttendanceDialog } from "./take-attendance-dialog";
+import type { KhojData, Student } from "@/lib/khoj/types";
 
 export function AttendanceView() {
   return <KhojDataGate>{(data) => <AttendanceContent data={data} />}</KhojDataGate>;
@@ -19,6 +21,9 @@ export function AttendanceView() {
 function AttendanceContent({ data }: { data: KhojData }) {
   const { gradeCode, refresh } = useKhojData();
   const { grade, students } = useGradeScope(data, gradeCode);
+  const [enrollOpen, setEnrollOpen] = React.useState(false);
+  const [takeAttendanceOpen, setTakeAttendanceOpen] = React.useState(false);
+  const [editStudent, setEditStudent] = React.useState<Student | null>(null);
 
   const months = Array.from(new Set(data.attendanceMonthly.map((a) => a.month_label)));
   const allGradesAvgByMonth = new Map(
@@ -62,8 +67,10 @@ function AttendanceContent({ data }: { data: KhojData }) {
         </div>
         {grade && (
           <div className="flex gap-2">
-            <Button variant="outline">+ Enroll student</Button>
-            <Button>+ Take today&apos;s attendance</Button>
+            <Button variant="outline" onClick={() => setEnrollOpen(true)}>
+              + Enroll student
+            </Button>
+            <Button onClick={() => setTakeAttendanceOpen(true)}>+ Take today&apos;s attendance</Button>
           </div>
         )}
       </div>
@@ -170,7 +177,7 @@ function AttendanceContent({ data }: { data: KhojData }) {
                     return <TableCell key={m}>{rec ? `${rec.attendance_pct}%` : "—"}</TableCell>;
                   })}
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="sm">
+                    <Button variant="ghost" size="sm" onClick={() => setEditStudent(s)}>
                       Edit
                     </Button>
                   </TableCell>
@@ -180,6 +187,37 @@ function AttendanceContent({ data }: { data: KhojData }) {
           </Table>
         </CardContent>
       </Card>
+
+      {grade && (
+        <>
+          <StudentFormDialog
+            open={enrollOpen}
+            onOpenChange={setEnrollOpen}
+            grades={data.grades}
+            gradeId={grade.id}
+            existingStudents={data.students}
+            onSaved={refresh}
+          />
+          <TakeAttendanceDialog
+            open={takeAttendanceOpen}
+            onOpenChange={setTakeAttendanceOpen}
+            grade={grade}
+            students={students}
+            onSaved={refresh}
+          />
+        </>
+      )}
+      {editStudent && (
+        <StudentFormDialog
+          open={!!editStudent}
+          onOpenChange={(open) => !open && setEditStudent(null)}
+          grades={data.grades}
+          gradeId={editStudent.grade_id}
+          existingStudents={data.students}
+          student={editStudent}
+          onSaved={refresh}
+        />
+      )}
     </div>
   );
 }

@@ -40,6 +40,30 @@ export type StudentGradeHistory = {
   grade_id: string | null;
 };
 
+export type StudentFormInput = {
+  gradeId: string;
+  rollNo: string;
+  name: string;
+  gender: "M" | "F" | "Other";
+  dateOfBirth: string | null;
+  section: string | null;
+  fatherName: string | null;
+  motherName: string | null;
+  socialCategory: SocialCategory;
+  minorityGroup: MinorityGroup;
+  bplBeneficiary: boolean;
+  cwsn: boolean;
+  impairmentType: string | null;
+  repeaterThisYear: boolean;
+  studentPen: string | null;
+  aadhaarNumber: string | null;
+  apaarId: string | null;
+  mobileNumber: string | null;
+  address: string | null;
+  /** academic_year -> grade_id, for the Grade History sub-table. */
+  gradeHistory: Record<string, string | null>;
+};
+
 export type AssessmentKind = "formative" | "summative";
 
 export type Assessment = {
