@@ -68,7 +68,7 @@ function OverviewContent({ data }: { data: KhojData }) {
       </div>
 
       {stats && stats.attendance_this_month_pct < stats.attendance_alert_threshold_pct && (
-        <div className="rounded-lg border border-bracket-basic/40 bg-bracket-basic/10 px-4 py-3 text-sm">
+        <div className="rounded-lg border border-alert-border bg-alert-bg px-4 py-3 text-sm text-alert-ink">
           <span className="font-semibold">Threshold alert — </span>
           {scopeLabel} attendance dropped to {stats.attendance_this_month_pct}% — below the{" "}
           {stats.attendance_alert_threshold_pct}% watch line.

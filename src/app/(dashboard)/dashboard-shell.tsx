@@ -43,7 +43,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 onClick={() => setRole(r)}
                 className={cn(
                   "rounded-md px-3 py-1.5 font-medium capitalize transition-colors",
-                  role === r ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  role === r ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 )}
               >
                 {r}
@@ -60,7 +60,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
             className={cn(
               "shrink-0 rounded-full border px-3 py-1 text-sm font-medium transition-colors",
               gradeCode === "All"
-                ? "border-gk-yellow bg-gk-yellow text-gk-ink"
+                ? "border-accent-gold bg-accent-gold text-accent-gold-ink"
                 : "border-border bg-background text-muted-foreground hover:text-foreground"
             )}
           >
@@ -73,7 +73,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
               className={cn(
                 "shrink-0 rounded-full border px-3 py-1 text-sm font-medium transition-colors",
                 gradeCode === g.code
-                  ? "border-gk-yellow bg-gk-yellow text-gk-ink"
+                  ? "border-accent-gold bg-accent-gold text-accent-gold-ink"
                   : "border-border bg-background text-muted-foreground hover:text-foreground"
               )}
             >
@@ -92,11 +92,13 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 href={item.href}
                 className={cn(
                   "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-gk-yellow/25 text-gk-ink" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  active
+                    ? "bg-nav-active-bg text-nav-active-ink"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 <span
-                  className={cn("size-1.5 rounded-full", active ? "bg-gk-yellow" : "bg-transparent")}
+                  className={cn("size-1.5 rounded-full", active ? "bg-nav-active-dot" : "bg-transparent")}
                 />
                 {item.label}
               </Link>

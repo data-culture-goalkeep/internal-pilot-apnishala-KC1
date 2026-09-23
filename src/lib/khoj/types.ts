@@ -7,12 +7,61 @@ export type Grade = {
 
 export type Role = "teacher" | "leadership";
 
+export type SocialCategory = "General" | "OBC" | "SC" | "ST" | "EWS";
+export type MinorityGroup = "None" | "Muslim" | "Christian" | "Sikh" | "Buddhist" | "Other";
+
 export type Student = {
   id: string;
   grade_id: string;
   roll_no: string;
   name: string;
   gender: "M" | "F" | "Other";
+  date_of_birth: string | null;
+  section: string | null;
+  father_name: string | null;
+  mother_name: string | null;
+  social_category: SocialCategory;
+  minority_group: MinorityGroup;
+  bpl_beneficiary: boolean;
+  cwsn: boolean;
+  impairment_type: string | null;
+  repeater_this_year: boolean;
+  student_pen: string | null;
+  aadhaar_number: string | null;
+  apaar_id: string | null;
+  mobile_number: string | null;
+  address: string | null;
+};
+
+export type StudentGradeHistory = {
+  id: string;
+  student_id: string;
+  academic_year: string;
+  grade_id: string | null;
+};
+
+export type StudentFormInput = {
+  gradeId: string;
+  rollNo: string;
+  name: string;
+  gender: "M" | "F" | "Other";
+  dateOfBirth: string | null;
+  section: string | null;
+  fatherName: string | null;
+  motherName: string | null;
+  socialCategory: SocialCategory;
+  minorityGroup: MinorityGroup;
+  bplBeneficiary: boolean;
+  cwsn: boolean;
+  impairmentType: string | null;
+  repeaterThisYear: boolean;
+  studentPen: string | null;
+  aadhaarNumber: string | null;
+  apaarId: string | null;
+  mobileNumber: string | null;
+  address: string | null;
+  /** academic_year -> grade_id, for the Grade History sub-table. */
+  gradeHistory: Record<string, string | null>;
 };
 
 export type AssessmentKind = "formative" | "summative";
@@ -32,12 +81,23 @@ export type Assessment = {
   bracket_advanced_pct: number;
 };
 
+export type ObjectiveCategory = "oral" | "written";
+
 export type AssessmentObjective = {
   id: string;
   assessment_id: string;
   objective_text: string;
   max_marks: number;
   class_average: number;
+  category: ObjectiveCategory | null;
+};
+
+export type AssessmentScore = {
+  id: string;
+  assessment_id: string;
+  objective_id: string;
+  student_id: string;
+  score: number;
 };
 
 export type CoverageMonth = {
@@ -72,6 +132,13 @@ export type StudentAttendance = {
   sort_order: number;
 };
 
+export type AttendanceDaily = {
+  id: string;
+  student_id: string;
+  record_date: string;
+  present: boolean;
+};
+
 export type AttendanceAlert = {
   id: string;
   student_id: string;
@@ -92,7 +159,36 @@ export type SelScore = {
 
 export type SelDomain = { id: string; name: string; sort_order: number };
 
-export type SjtSituation = { id: string; title: string; sort_order: number };
+export type SjtSituation = {
+  id: string;
+  title: string;
+  sort_order: number;
+  story_en: string;
+  story_hi: string;
+  options_en: string[];
+  options_hi: string[];
+};
+
+export type ObservationBand = "k3" | "g4";
+
+export type SelObservationItem = {
+  id: string;
+  code: string;
+  band: ObservationBand;
+  domain_id: string;
+  title: string;
+  guidance: string | null;
+  sort_order: number;
+};
+
+export type SelResponseItem = {
+  id: string;
+  code: string;
+  domain_id: string;
+  statement_en: string;
+  statement_hi: string;
+  sort_order: number;
+};
 
 export type SjtResponse = {
   situation_id: string;
@@ -182,9 +278,12 @@ export type KhojData = {
   selScores: SelScore[];
   selDomains: SelDomain[];
   sjtSituations: SjtSituation[];
+  selObservationItems: SelObservationItem[];
+  selResponseItems: SelResponseItem[];
   sjtResponses: SjtResponse[];
   sjtCompetencyScores: SjtCompetencyScore[];
   sjtCoverage: SjtCoverage[];
+  selResponses: SelResponse[];
   studentGrowth: StudentGrowth[];
   actionQueue: ActionQueueItem[];
   bracketMovement: BracketMovement[];
@@ -194,12 +293,16 @@ export type KhojData = {
 
 export const BRACKET_LABELS = ["Below Basic", "Basic", "Proficient", "Advanced"] as const;
 
+/** The 5 CASEL-style domains used throughout the SEL Assessment Form
+ * (Observation + Student Response) and the SJT competency-map chart — per
+ * the actual design handoff mockup file, not the README's summary (which
+ * named a different, incorrect set of 5). */
 export const SEL_DOMAINS_TAXONOMY = [
-  "Collaboration",
-  "Emotional Regulation",
-  "Responsible Decision-Making",
-  "Self-Awareness",
-  "Self-Regulation",
+  "Self Awareness",
+  "Self Management",
+  "Social Awareness",
+  "Relationship Skills",
+  "Responsible Decision Making",
 ] as const;
 
 /** Grades 6-10 are the only ones eligible for SJT / Student Response, per
@@ -207,4 +310,13 @@ export const SEL_DOMAINS_TAXONOMY = [
 export function isSjtEligible(gradeCode: string) {
   const n = Number(gradeCode);
   return Number.isFinite(n) && n >= 6 && n <= 10;
+}
+
+/** Observation items are grade-band-specific: "k3" (LKG-3) has a shorter
+ * item set, "g4" (Grade 4-10) a longer one — per the mockup's ITEMS_K3 /
+ * ITEMS_G4. */
+export function observationBandForGrade(gradeCode: string): "k3" | "g4" {
+  if (gradeCode === "LKG" || gradeCode === "UKG") return "k3";
+  const n = Number(gradeCode);
+  return Number.isFinite(n) && n <= 3 ? "k3" : "g4";
 }

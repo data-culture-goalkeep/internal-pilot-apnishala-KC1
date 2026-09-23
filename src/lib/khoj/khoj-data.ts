@@ -33,6 +33,9 @@ export async function getKhojData(): Promise<KhojData> {
     bracketMovement,
     topMovers,
     overviewStats,
+    selObservationItems,
+    selResponseItems,
+    selResponses,
   ] = await Promise.all([
     supabase.from("grades").select("*").order("sort_order"),
     supabase.from("students").select("*").order("roll_no"),
@@ -55,6 +58,9 @@ export async function getKhojData(): Promise<KhojData> {
     supabase.from("bracket_movement").select("*"),
     supabase.from("top_movers").select("*"),
     supabase.from("overview_stats").select("*"),
+    supabase.from("sel_observation_items").select("*").order("sort_order"),
+    supabase.from("sel_response_items").select("*").order("sort_order"),
+    supabase.from("sel_responses").select("*").order("updated_at", { ascending: false }),
   ]);
 
   const firstError = [
@@ -62,6 +68,7 @@ export async function getKhojData(): Promise<KhojData> {
     attendanceRecords, studentAttendance, attendanceAlerts, selParameters, selScores,
     selDomains, sjtSituations, sjtResponses, sjtCompetencyScores, sjtCoverage,
     studentGrowth, actionQueue, bracketMovement, topMovers, overviewStats,
+    selObservationItems, selResponseItems, selResponses,
   ].find((r) => r.error)?.error;
   if (firstError) throw firstError;
 
@@ -87,5 +94,8 @@ export async function getKhojData(): Promise<KhojData> {
     bracketMovement: bracketMovement.data ?? [],
     topMovers: topMovers.data ?? [],
     overviewStats: overviewStats.data ?? [],
+    selObservationItems: selObservationItems.data ?? [],
+    selResponseItems: selResponseItems.data ?? [],
+    selResponses: selResponses.data ?? [],
   };
 }

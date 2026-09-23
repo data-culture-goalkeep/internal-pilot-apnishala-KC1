@@ -8,6 +8,10 @@ Khoj Dashboard — a school analytics app for teachers and leadership, built fro
 
 No auth in this pass — internal pilot, same posture as key-questions-interface's Mockup Navigator (public reads, service-role writes via server actions).
 
+## Git workflow
+
+`main` is the only long-lived branch and is the repo's default. All work happens on a `feature/*` branch, with a PR opened into `main` at the end of each round of work — never push directly to `main`. Claude never merges a PR itself; the repo owner merges, or explicitly tells Claude to. Note in each PR description whether it's expected to affect the Vercel preview/production deploy (e.g. env var changes, new routes).
+
 ## Architecture
 
 **Data cache**: `src/app/(dashboard)/layout.tsx` renders `<KhojDataProvider>` (`src/lib/khoj/khoj-data-provider.tsx`), which calls the single combined server action `getKhojData()` (`src/lib/khoj/khoj-data.ts`) on mount and caches the whole dataset in React context — every view reads from `useKhojData()` / `KhojDataGate` rather than issuing its own Supabase query. The full dataset for one school is small enough that this is simpler than key-questions-interface's `refresh()`/sequence-number machinery; if that changes, port the pattern.
@@ -16,7 +20,11 @@ No auth in this pass — internal pilot, same posture as key-questions-interface
 
 **Mutations**: server actions in `src/lib/khoj/actions.ts` (`"use server"`), using the service-role client (`src/lib/supabase/admin.ts`) — no RLS boundary in this pass, so these are the only write path. Callers `await refresh()` from `useKhojData()` after a mutation.
 
-**Charts**: hand-rolled CSS bar/stacked-bar/progress components in `src/components/charts/` (no charting library) — themed via the bracket/SEL chart tokens in `globals.css`, not inline hex values.
+**Charts**: hand-rolled CSS bar/stacked-bar/progress components in `src/components/charts/` (no charting library) — themed via the bracket/SEL chart tokens in `globals.css`, not inline hex values. `BarChart` (the plain vertical one) always labels each bar with its numeric value above it — a fixed `LABEL_RESERVED_PX` slice of the chart's height is reserved for that label so it never overflows the bar area.
+
+**Student sort order**: every data-entry surface that lists students (score entry, take-attendance roster, SEL Assessment Form roster) offers a Roll no./Name sort toggle rather than a fixed order — implemented once via `sortStudents()`/`StudentSortBy` in `src/lib/khoj/scope.ts`, not reimplemented per screen. Roll numbers are zero-padded text, so the sort compares them with `numeric: true`, not a plain string sort.
+
+**Score-entry validation**: `ScoreEntryDialog` (`src/app/(dashboard)/assessment-flow-dialogs.tsx`) clamps every score input to `[0, objective.max_marks]` on change (and again defensively before the save call) — the HTML `max` attribute alone doesn't stop a value being typed or pasted in. Objective label fields in `ConfigureAssessmentDialog` are mandatory: the "Create & enter scores" button stays disabled while any added row has a blank label.
 
 ### Supabase specifics
 
@@ -27,14 +35,23 @@ No auth in this pass — internal pilot, same posture as key-questions-interface
 
 ### Design tokens
 
-Goalkeep brand tokens ported from `key-questions-interface`'s `globals.css` (`--gk-ink/yellow/coral/teal/blue/blue-deep`, `--radius` 8px / `--radius-card` 12px). New tokens added for this app: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale, reused for SJT answer options A–D) and `--sel-thrive/resist`. Don't inline hex/oklch values at chart call sites — extend these tokens instead.
+Priority is visual fidelity to the design handoff mockup (`design_handoff_khoj_dashboard/*.dc.html`), not a strict remap onto Goalkeep's existing brand tokens — where the mockup's actual `oklch()` values differ from Goalkeep's palette (e.g. the gold/mustard accent, the bracket scale), the mockup wins and is kept as `oklch()` verbatim in `globals.css` (Tailwind v4 / evergreen browsers handle `oklch()` natively, so there's no lossy hex conversion). Goalkeep brand tokens (`--gk-ink/yellow/coral/teal/blue/blue-deep`) are still ported and still used in places that don't conflict with the mockup. `--radius` 8px / `--radius-card` 14px (mockup's card radius, not Goalkeep's 12px).
+
+Khoj-specific tokens: `--bracket-below/basic/proficient/advanced` (the 4-tier assessment bracket scale — red/amber/light-green/deep-green per the mockup, reused verbatim for SJT answer options A–D — **not** `--gk-blue-deep`, that was a bug from an earlier pass), `--sel-thrive/resist`, `--accent-gold`/`--accent-gold-strong` (+ `-ink` variants — selected grade pill and primary buttons), `--nav-active-bg/ink/dot`, `--status-positive/negative/neutral`, `--alert-bg/border/ink` (threshold banners). Don't inline hex/oklch values at call sites — extend these tokens instead.
+
+`--font-heading` is **Manrope** (via `next/font/google` in `src/app/layout.tsx`), matching the mockup — used for headings, the top-bar wordmark, nav active state, and big stat/KPI numerics. `--font-sans` (Inter) is everything else. There is no separate display/serif font (an earlier pass added Fraunces for hero moments; removed — it didn't match the mockup, which uses Manrope for headings throughout, not a serif).
+
+### SEL Assessment Form — editing an existing entry
+
+The SEL & Holistic view (`src/app/(dashboard)/sel/sel-view.tsx`) has a "Recently added" table (reads `KhojData.selResponses`, fetched in `khoj-data.ts`) whose Edit action links to `/sel/new?grade=<code>&studentId=<id>&cycleLabel=<cycle>&type=<assessment_type>`. When `sel-assessment-form.tsx` sees those three params, it skips straight to the `entry` step for that student/cycle/type and pre-fills the form from the matching `sel_responses.payload` row, instead of the normal setup → roster → entry flow. Keep this deep-link contract in mind before changing either file's query-param names.
 
 ### Open items from the design handoff (see `design_handoff_khoj_dashboard/README.md`)
 
 - SJT competency-map scoring/normalization is a placeholder (`sjt_competency_scores.score_pct` is a generic field) — real calculation is separate follow-up work, per product decision.
 - No confirm-on-delete for table row deletes yet (matches the prototype) — flagged as follow-up.
-- Logo: using an emoji placeholder in the top bar; the handoff's `uploads/apni-shala-logo-cc-01.png` vs. a Goalkeep-branded mark needs a client decision.
 - Leadership-role views for pages other than Overview weren't designed in the handoff — every other view currently shows the same content regardless of role.
+
+Resolved: the top bar uses the client's actual Apnishala logo (`public/apnishala-logo.png`), not a Goalkeep mark or placeholder.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
